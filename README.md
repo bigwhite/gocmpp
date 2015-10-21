@@ -1,2 +1,2 @@
 # gocmpp
-An implementation of China Mobile Peer to Peer protocol for both client and server sides.
+An implementation of China Mobile Peer to Peer protocol in golang for both client and server sides.
