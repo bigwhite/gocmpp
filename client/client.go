@@ -15,13 +15,16 @@ package cmppclient
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"net"
 
 	"github.com/bigwhite/gocmpp/packet"
 )
 
 var ErrNotCompleted = errors.New("Data not being handled completed")
+var ErrRespNotMatch = errors.New("The response is not matched with the request")
 
 // Client stands for one client-side instance, just like a session.
 // It may connect to the server, send & recv cmpp packets and terminate the connection.
@@ -75,15 +78,29 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 	}
 
 	// login to the server.
-	p := &cmpppacket.ConnectRequestPacket{
+	req := &cmpppacket.ConnectRequestPacket{
 		SourceAddr: user,
 		Secret:     password,
 		Version:    cli.typ,
 	}
 
-	err = cli.SendPacket(p)
+	err = cli.SendPacket(req)
 	if err != nil {
 		return err
+	}
+
+	p, err := cli.RecvAndUnpackPacket()
+	if err != nil {
+		return err
+	}
+
+	resp, ok := p.(*cmpppacket.ConnectResponsePacket)
+	if !ok {
+		return ErrRespNotMatch
+	}
+
+	if resp.Status != 0 {
+		return cmpppacket.ConnRespStatusErrMap[resp.Status]
 	}
 
 	return nil
@@ -94,6 +111,8 @@ func (cli *Client) SendPacket(packet cmpppacket.Packer) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println(hex.Dump(data))
 
 	length, err := cli.conn.Write(data)
 	if err != nil {
@@ -113,6 +132,7 @@ func (cli *Client) RecvAndUnpackPacket() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("%x\n", totalLen)
 
 	if cli.typ == cmpppacket.Ver30 {
 		if totalLen < cmpppacket.CMPP3_PACKET_MIN || totalLen > cmpppacket.CMPP3_PACKET_MAX {
@@ -132,6 +152,7 @@ func (cli *Client) RecvAndUnpackPacket() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("%#v\n", commandId)
 
 	if !((commandId > cmpppacket.CMPP_REQUEST_MIN && commandId < cmpppacket.CMPP_REQUEST_MAX) ||
 		(commandId > cmpppacket.CMPP_RESPONSE_MIN && commandId < cmpppacket.CMPP_RESPONSE_MAX)) {
@@ -160,5 +181,7 @@ func (cli *Client) RecvAndUnpackPacket() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("%#v\n", p)
+	fmt.Printf("%#v\n", p.(*cmpppacket.ConnectResponsePacket).Version)
 	return p, nil
 }

@@ -17,14 +17,30 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/binary"
+	"errors"
 	"strconv"
 	"time"
 )
 
 const (
-	ConnectReqPacketLen = 4 + 4 + 4 + 6 + 16 + 1 + 4
-	ConnectRspPacketLen = 4 + 4 + 4 + 4 + 16 + 1
+	ConnectReqPacketLen uint32 = 4 + 4 + 4 + 6 + 16 + 1 + 4
+	ConnectRspPacketLen uint32 = 4 + 4 + 4 + 4 + 16 + 1
 )
+
+// Errors for connect resp status
+var ErrConnInvalidStruct = errors.New("Connect response status: invalid protocol structure")
+var ErrConnInvalidSourceAddr = errors.New("Connect response status: invalid source address")
+var ErrConnAuthFailed = errors.New("Connect response status: Auth failed")
+var ErrConnVerTooHigh = errors.New("Connect response status: protocol version is too high")
+var ErrConnOthers = errors.New("Connect response status: other errors")
+
+var ConnRespStatusErrMap = map[uint8]error{
+	1: ErrConnInvalidStruct,
+	2: ErrConnInvalidSourceAddr,
+	3: ErrConnAuthFailed,
+	4: ErrConnVerTooHigh,
+	5: ErrConnOthers,
+}
 
 func GetCurTimeStamp() (string, uint32) {
 	s := time.Now().Format("0102150405")
@@ -42,7 +58,7 @@ type ConnectRequestPacket struct {
 }
 
 type ConnectResponsePacket struct {
-	Status              uint32
+	Status              uint8
 	AuthenticatorIsmg   string
 	Version             Type
 	Secret              string
@@ -51,15 +67,14 @@ type ConnectResponsePacket struct {
 }
 
 func (p *ConnectRequestPacket) Pack(seqId uint32) ([]byte, error) {
-	buf := make([]byte, ConnectReqPacketLen)
-	packBuf := bytes.NewBuffer(buf)
+	var packBuf = new(bytes.Buffer)
 
 	// pack header
 	err := binary.Write(packBuf, binary.BigEndian, ConnectReqPacketLen)
 	if err != nil {
 		return nil, err
 	}
-	err = binary.Write(packBuf, binary.BigEndian, CMPP_CONNECT)
+	err = binary.Write(packBuf, binary.BigEndian, uint32(CMPP_CONNECT))
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +107,7 @@ func (p *ConnectRequestPacket) Unpack(data []byte) error {
 }
 
 func (p *ConnectResponsePacket) Pack(seqId uint32) ([]byte, error) {
-	buf := make([]byte, ConnectRspPacketLen)
-	packBuf := bytes.NewBuffer(buf)
+	var packBuf = new(bytes.Buffer)
 
 	// pack header
 	err := binary.Write(packBuf, binary.BigEndian, ConnectRspPacketLen)
@@ -127,6 +141,34 @@ func (p *ConnectResponsePacket) Pack(seqId uint32) ([]byte, error) {
 	return packBuf.Bytes(), nil
 }
 
+// data include seqId in header + the whole body
 func (p *ConnectResponsePacket) Unpack(data []byte) error {
+	var buf = bytes.NewBuffer(data)
+
+	// Sequence Id
+	err := binary.Read(buf, binary.BigEndian, &p.SeqId)
+	if err != nil {
+		return err
+	}
+
+	// Body: Status
+	err = binary.Read(buf, binary.BigEndian, &p.Status)
+	if err != nil {
+		return err
+	}
+
+	// Body: AuthenticatorISMG
+	var s = make([]byte, 16)
+	_, err = buf.Read(s)
+	if err != nil {
+		return err
+	}
+	p.AuthenticatorIsmg = string(s)
+
+	// Body: Version
+	err = binary.Read(buf, binary.BigEndian, &p.Version)
+	if err != nil {
+		return err
+	}
 	return nil
 }

@@ -43,6 +43,7 @@ const (
 	CMPP3_PACKET_MIN = 12
 )
 
+// Protocol errors
 var ErrTotalLengthInvalid = errors.New("Total_length in Packet data is invalid")
 var ErrCommandIdInvalid = errors.New("Command_Id in Packet data is invalid")
 
@@ -76,5 +77,5 @@ func (id CommandId) String() string {
 
 type Packer interface {
 	Pack(seqId uint32) ([]byte, error)
-	Unpack([]byte) error
+	Unpack(data []byte) error
 }
