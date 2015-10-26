@@ -128,7 +128,8 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 }
 
 func (cli *Client) SendPacket(packet cmpppacket.Packer) error {
-	data, err := packet.Pack(<-cli.seqId)
+	//data, err := packet.Pack(<-cli.seqId)
+	data, err := packet.Pack(0x17)
 	if err != nil {
 		return err
 	}

@@ -19,6 +19,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -42,10 +43,27 @@ var ConnRespStatusErrMap = map[uint8]error{
 	5: ErrConnOthers,
 }
 
-func GetCurTimeStamp() (string, uint32) {
+func now() (string, uint32) {
 	s := time.Now().Format("0102150405")
 	i, _ := strconv.Atoi(s)
 	return s, uint32(i)
+}
+
+// timeStamp2Str converts a timestamp(MMDDHHMMSS) int to a string(10 bytes).
+func timeStamp2Str(t uint32) string {
+	s := strconv.Itoa(int(t))
+	n := 10 - len(s)
+
+	if n == 0 {
+		return s
+	} else if n > 0 {
+		var buf = make([]byte, n)
+		for i := 0; i < n; i++ {
+			buf[i] = '0'
+		}
+		return strings.Join([]string{string(buf), s}, "")
+	}
+	return "" //should never reach here.
 }
 
 type ConnectRequestPacket struct {
@@ -82,12 +100,20 @@ func (p *ConnectRequestPacket) Pack(seqId uint32) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	p.SeqId = seqId
 
 	var ts string
-	ts, p.Timestamp = GetCurTimeStamp()
+	if p.Timestamp == 0 {
+		ts, p.Timestamp = now()
+	} else {
+		ts = timeStamp2Str(p.Timestamp)
+	}
 
 	// pack body
-	packBuf.WriteString(p.SourceAddr)
+	_, err = packBuf.WriteString(p.SourceAddr)
+	if err != nil {
+		return nil, err
+	}
 
 	md5 := md5.Sum(bytes.Join([][]byte{[]byte(p.SourceAddr),
 		make([]byte, 9),
@@ -95,14 +121,62 @@ func (p *ConnectRequestPacket) Pack(seqId uint32) ([]byte, error) {
 		[]byte(ts)},
 		nil))
 	p.AuthenticatorSource = string(md5[:])
-	packBuf.WriteString(p.AuthenticatorSource)
-	binary.Write(packBuf, binary.BigEndian, p.Version)
-	binary.Write(packBuf, binary.BigEndian, p.Timestamp)
+
+	_, err = packBuf.WriteString(p.AuthenticatorSource)
+	if err != nil {
+		return nil, err
+	}
+
+	err = binary.Write(packBuf, binary.BigEndian, p.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	err = binary.Write(packBuf, binary.BigEndian, p.Timestamp)
+	if err != nil {
+		return nil, err
+	}
 
 	return packBuf.Bytes(), nil
 }
 
 func (p *ConnectRequestPacket) Unpack(data []byte) error {
+	var buf = bytes.NewBuffer(data)
+
+	// Sequence Id
+	err := binary.Read(buf, binary.BigEndian, &p.SeqId)
+	if err != nil {
+		return err
+	}
+
+	// Body: Source_Addr
+	var sa = make([]byte, 6)
+	_, err = buf.Read(sa)
+	if err != nil {
+		return err
+	}
+	p.SourceAddr = string(sa)
+
+	// Body: AuthenticatorSource
+	var as = make([]byte, 16)
+	_, err = buf.Read(as)
+	if err != nil {
+		return err
+	}
+	p.AuthenticatorSource = string(as)
+
+	// Body: Version
+	err = binary.Read(buf, binary.BigEndian, &p.Version)
+	if err != nil {
+		return err
+	}
+
+	// Body: timestamp
+	err = binary.Read(buf, binary.BigEndian, &p.Timestamp)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -124,7 +198,11 @@ func (p *ConnectResponsePacket) Pack(seqId uint32) ([]byte, error) {
 	}
 
 	// pack body
-	binary.Write(packBuf, binary.BigEndian, p.Status)
+	err = binary.Write(packBuf, binary.BigEndian, p.Status)
+	if err != nil {
+		return nil, err
+	}
+
 	var statusBuf bytes.Buffer
 	err = binary.Write(&statusBuf, binary.BigEndian, p.Status)
 	if err != nil {
@@ -135,8 +213,16 @@ func (p *ConnectResponsePacket) Pack(seqId uint32) ([]byte, error) {
 		[]byte(p.Secret)},
 		nil))
 	p.AuthenticatorIsmg = string(md5[:])
-	packBuf.WriteString(p.AuthenticatorIsmg)
-	binary.Write(packBuf, binary.BigEndian, p.Version)
+
+	_, err = packBuf.WriteString(p.AuthenticatorIsmg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = binary.Write(packBuf, binary.BigEndian, p.Version)
+	if err != nil {
+		return nil, err
+	}
 
 	return packBuf.Bytes(), nil
 }
