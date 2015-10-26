@@ -12,9 +12,3 @@
 // limitations under the License.
 
 package cmpppacket_test
-
-import "cmpppacket"
-
-func ExampleSubmitCmpp2() {
-	p := cmpppacket.NewSubmit(cmpppacket.CMPP2, xxx)
-
