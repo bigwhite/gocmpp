@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/bigwhite/gocmpp.svg?branch=master)](https://travis-ci.org/bigwhite/gocmpp)
+
 # gocmpp
 An implementation of China Mobile Peer to Peer protocol in golang for both client and server sides.
 
