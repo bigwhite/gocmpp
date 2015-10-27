@@ -13,7 +13,11 @@
 
 package cmpputils
 
-import "unsafe"
+import (
+	"strconv"
+	"strings"
+	"unsafe"
+)
 
 func IsBigEndian() bool {
 	var i uint16 = 0x1234
@@ -22,4 +26,21 @@ func IsBigEndian() bool {
 		return true
 	}
 	return false
+}
+
+// TimeStamp2Str converts a timestamp(MMDDHHMMSS) int to a string(10 bytes).
+func TimeStamp2Str(t uint32) string {
+	s := strconv.Itoa(int(t))
+	n := 10 - len(s)
+
+	if n == 0 {
+		return s
+	} else if n > 0 {
+		var buf = make([]byte, n)
+		for i := 0; i < n; i++ {
+			buf[i] = '0'
+		}
+		return strings.Join([]string{string(buf), s}, "")
+	}
+	return "" //should never reach here.
 }
