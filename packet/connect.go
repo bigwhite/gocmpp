@@ -19,25 +19,28 @@ import (
 	"encoding/binary"
 	"errors"
 	"strconv"
-	"strings"
 	"time"
+
+	"github.com/bigwhite/gocmpp/utils"
 )
 
+// Packet length const for cmpp connect request and response packets.
 const (
-	ConnectReqPacketLen uint32 = 4 + 4 + 4 + 6 + 16 + 1 + 4
-	ConnectRspPacketLen uint32 = 4 + 4 + 4 + 4 + 16 + 1
+	CmppConnReqPktLen  uint32 = 4 + 4 + 4 + 6 + 16 + 1 + 4 //39d, 0x27
+	Cmpp2ConnRspPktLen uint32 = 4 + 4 + 4 + 1 + 16 + 1     //30d, 0x1e
+	Cmpp3ConnRspPktLen uint32 = 4 + 4 + 4 + 4 + 16 + 1     //33d, 0x21
 )
 
-// Errors for connect resp status
+// Errors for connect resp status.
 var ErrConnInvalidStruct = errors.New("Connect response status: invalid protocol structure")
-var ErrConnInvalidSourceAddr = errors.New("Connect response status: invalid source address")
+var ErrConnInvalidSrcAddr = errors.New("Connect response status: invalid source address")
 var ErrConnAuthFailed = errors.New("Connect response status: Auth failed")
 var ErrConnVerTooHigh = errors.New("Connect response status: protocol version is too high")
 var ErrConnOthers = errors.New("Connect response status: other errors")
 
-var ConnRespStatusErrMap = map[uint8]error{
+var ConnRspStatusErrMap = map[uint8]error{
 	1: ErrConnInvalidStruct,
-	2: ErrConnInvalidSourceAddr,
+	2: ErrConnInvalidSrcAddr,
 	3: ErrConnAuthFailed,
 	4: ErrConnVerTooHigh,
 	5: ErrConnOthers,
@@ -49,46 +52,50 @@ func now() (string, uint32) {
 	return s, uint32(i)
 }
 
-// timeStamp2Str converts a timestamp(MMDDHHMMSS) int to a string(10 bytes).
-func timeStamp2Str(t uint32) string {
-	s := strconv.Itoa(int(t))
-	n := 10 - len(s)
-
-	if n == 0 {
-		return s
-	} else if n > 0 {
-		var buf = make([]byte, n)
-		for i := 0; i < n; i++ {
-			buf[i] = '0'
-		}
-		return strings.Join([]string{string(buf), s}, "")
-	}
-	return "" //should never reach here.
+// CmppConnReqPkt represents a Cmpp2 or Cmpp3 connect request packet.
+//
+// when used in client side(pack), you should initialize it with
+// correct SourceAddr(SrcAddr), Secret and Version.
+//
+// when used in server side(unpack), nothing needed to be initialized.
+// unpack will fill the SourceAddr(SrcAddr), AuthSrc, Version, Timestamp
+// and SeqId
+//
+type CmppConnReqPkt struct {
+	SrcAddr   string
+	AuthSrc   string
+	Version   Type
+	Timestamp uint32
+	Secret    string
+	SeqId     uint32
 }
 
-type ConnectRequestPacket struct {
-	SourceAddr          string
-	AuthenticatorSource string
-	Version             Type
-	Timestamp           uint32
-	Secret              string
-	SeqId               uint32
+type Cmpp2ConnRspPkt struct {
+	Status   uint8
+	AuthIsmg string
+	Version  Type
+	Secret   string
+	AuthSrc  string
+	SeqId    uint32
 }
 
-type ConnectResponsePacket struct {
-	Status              uint8
-	AuthenticatorIsmg   string
-	Version             Type
-	Secret              string
-	AuthenticatorSource string
-	SeqId               uint32
+type Cmpp3ConnRspPkt struct {
+	Status   uint32
+	AuthIsmg string
+	Version  Type
+	Secret   string
+	AuthSrc  string
+	SeqId    uint32
 }
 
-func (p *ConnectRequestPacket) Pack(seqId uint32) ([]byte, error) {
+// Pack packs the CmppConnReqPkt to bytes stream for client side.
+// Before calling Pack, you should initialize a CmppConnReqPkt variable
+// with correct SourceAddr(SrcAddr), Secret and Version.
+func (p *CmppConnReqPkt) Pack(seqId uint32) ([]byte, error) {
 	var packBuf = new(bytes.Buffer)
 
-	// pack header
-	err := binary.Write(packBuf, binary.BigEndian, ConnectReqPacketLen)
+	// Pack header
+	err := binary.Write(packBuf, binary.BigEndian, CmppConnReqPktLen)
 	if err != nil {
 		return nil, err
 	}
@@ -104,25 +111,25 @@ func (p *ConnectRequestPacket) Pack(seqId uint32) ([]byte, error) {
 
 	var ts string
 	if p.Timestamp == 0 {
-		ts, p.Timestamp = now()
+		ts, p.Timestamp = now() //default: current time.
 	} else {
-		ts = timeStamp2Str(p.Timestamp)
+		ts = cmpputils.TimeStamp2Str(p.Timestamp)
 	}
 
-	// pack body
-	_, err = packBuf.WriteString(p.SourceAddr)
+	// Pack body
+	_, err = packBuf.WriteString(p.SrcAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	md5 := md5.Sum(bytes.Join([][]byte{[]byte(p.SourceAddr),
+	md5 := md5.Sum(bytes.Join([][]byte{[]byte(p.SrcAddr),
 		make([]byte, 9),
 		[]byte(p.Secret),
 		[]byte(ts)},
 		nil))
-	p.AuthenticatorSource = string(md5[:])
+	p.AuthSrc = string(md5[:])
 
-	_, err = packBuf.WriteString(p.AuthenticatorSource)
+	_, err = packBuf.WriteString(p.AuthSrc)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +147,10 @@ func (p *ConnectRequestPacket) Pack(seqId uint32) ([]byte, error) {
 	return packBuf.Bytes(), nil
 }
 
-func (p *ConnectRequestPacket) Unpack(data []byte) error {
+// Unpack unpack the binary byte stream to a CmppConnReqPkt variable.
+// Usually it is used in server side. After unpack, you will get SeqId, SourceAddr,
+// AuthenticatorSource, Version and Timestamp.
+func (p *CmppConnReqPkt) Unpack(data []byte) error {
 	var buf = bytes.NewBuffer(data)
 
 	// Sequence Id
@@ -155,15 +165,15 @@ func (p *ConnectRequestPacket) Unpack(data []byte) error {
 	if err != nil {
 		return err
 	}
-	p.SourceAddr = string(sa)
+	p.SrcAddr = string(sa)
 
-	// Body: AuthenticatorSource
+	// Body: AuthSrc
 	var as = make([]byte, 16)
 	_, err = buf.Read(as)
 	if err != nil {
 		return err
 	}
-	p.AuthenticatorSource = string(as)
+	p.AuthSrc = string(as)
 
 	// Body: Version
 	err = binary.Read(buf, binary.BigEndian, &p.Version)
@@ -180,11 +190,14 @@ func (p *ConnectRequestPacket) Unpack(data []byte) error {
 	return nil
 }
 
-func (p *ConnectResponsePacket) Pack(seqId uint32) ([]byte, error) {
+// Pack packs the Cmpp2ConnRspPkt to bytes stream for server side.
+// Before calling Pack, you should initialize a Cmpp2ConnRspPkt variable
+// with correct Status,AuthenticatorSource, Secret and Version.
+func (p *Cmpp2ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
 	var packBuf = new(bytes.Buffer)
 
 	// pack header
-	err := binary.Write(packBuf, binary.BigEndian, ConnectRspPacketLen)
+	err := binary.Write(packBuf, binary.BigEndian, Cmpp2ConnRspPktLen)
 	if err != nil {
 		return nil, err
 	}
@@ -196,6 +209,7 @@ func (p *ConnectResponsePacket) Pack(seqId uint32) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	p.SeqId = seqId
 
 	// pack body
 	err = binary.Write(packBuf, binary.BigEndian, p.Status)
@@ -203,18 +217,13 @@ func (p *ConnectResponsePacket) Pack(seqId uint32) ([]byte, error) {
 		return nil, err
 	}
 
-	var statusBuf bytes.Buffer
-	err = binary.Write(&statusBuf, binary.BigEndian, p.Status)
-	if err != nil {
-		return nil, err
-	}
-	md5 := md5.Sum(bytes.Join([][]byte{statusBuf.Bytes(),
-		[]byte(p.AuthenticatorSource),
+	md5 := md5.Sum(bytes.Join([][]byte{[]byte{p.Status},
+		[]byte(p.AuthSrc),
 		[]byte(p.Secret)},
 		nil))
-	p.AuthenticatorIsmg = string(md5[:])
+	p.AuthIsmg = string(md5[:])
 
-	_, err = packBuf.WriteString(p.AuthenticatorIsmg)
+	_, err = packBuf.WriteString(p.AuthIsmg)
 	if err != nil {
 		return nil, err
 	}
@@ -227,8 +236,11 @@ func (p *ConnectResponsePacket) Pack(seqId uint32) ([]byte, error) {
 	return packBuf.Bytes(), nil
 }
 
-// data include seqId in header + the whole body
-func (p *ConnectResponsePacket) Unpack(data []byte) error {
+// Unpack unpack the binary byte stream to a Cmpp2ConnRspPkt variable.
+// Usually it is used in client side. After unpack, you will get SeqId, Status,
+// AuthenticatorIsmg, and Version.
+// Parameter data contains seqId in header and the whole packet body.
+func (p *Cmpp2ConnRspPkt) Unpack(data []byte) error {
 	var buf = bytes.NewBuffer(data)
 
 	// Sequence Id
@@ -249,7 +261,7 @@ func (p *ConnectResponsePacket) Unpack(data []byte) error {
 	if err != nil {
 		return err
 	}
-	p.AuthenticatorIsmg = string(s)
+	p.AuthIsmg = string(s)
 
 	// Body: Version
 	err = binary.Read(buf, binary.BigEndian, &p.Version)

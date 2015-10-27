@@ -99,10 +99,11 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 	}
 
 	// login to the server.
-	req := &cmpppacket.ConnectRequestPacket{
-		SourceAddr: user,
-		Secret:     password,
-		Version:    cli.typ,
+	req := &cmpppacket.CmppConnReqPkt{
+		SrcAddr:   user,
+		Secret:    password,
+		Version:   cli.typ,
+		Timestamp: 1021080510,
 	}
 
 	err = cli.SendPacket(req)
@@ -115,13 +116,13 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 		return err
 	}
 
-	resp, ok := p.(*cmpppacket.ConnectResponsePacket)
+	resp, ok := p.(*cmpppacket.Cmpp2ConnRspPkt)
 	if !ok {
 		return ErrRespNotMatch
 	}
 
 	if resp.Status != 0 {
-		return cmpppacket.ConnRespStatusErrMap[resp.Status]
+		return cmpppacket.ConnRspStatusErrMap[resp.Status]
 	}
 
 	return nil
@@ -154,14 +155,15 @@ func (cli *Client) RecvAndUnpackPacket() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("cmpp packet totallen =", totalLen)
 
-	if cli.typ == cmpppacket.Ver30 {
+	if cli.typ == cmpppacket.V30 {
 		if totalLen < cmpppacket.CMPP3_PACKET_MIN || totalLen > cmpppacket.CMPP3_PACKET_MAX {
 			return nil, cmpppacket.ErrTotalLengthInvalid
 		}
 	}
 
-	if cli.typ == cmpppacket.Ver21 || cli.typ == cmpppacket.Ver20 {
+	if cli.typ == cmpppacket.V21 || cli.typ == cmpppacket.V20 {
 		if totalLen < cmpppacket.CMPP2_PACKET_MIN || totalLen > cmpppacket.CMPP2_PACKET_MAX {
 			return nil, cmpppacket.ErrTotalLengthInvalid
 		}
@@ -173,6 +175,7 @@ func (cli *Client) RecvAndUnpackPacket() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("cmpp packet commandid:", commandId)
 
 	if !((commandId > cmpppacket.CMPP_REQUEST_MIN && commandId < cmpppacket.CMPP_REQUEST_MAX) ||
 		(commandId > cmpppacket.CMPP_RESPONSE_MIN && commandId < cmpppacket.CMPP_RESPONSE_MAX)) {
@@ -190,9 +193,9 @@ func (cli *Client) RecvAndUnpackPacket() (interface{}, error) {
 	var p cmpppacket.Packer
 	switch commandId {
 	case cmpppacket.CMPP_CONNECT:
-		p = &cmpppacket.ConnectRequestPacket{}
+		p = &cmpppacket.CmppConnReqPkt{}
 	case cmpppacket.CMPP_CONNECT_RESP:
-		p = &cmpppacket.ConnectResponsePacket{}
+		p = &cmpppacket.Cmpp2ConnRspPkt{}
 	default:
 		p = nil
 		return nil, cmpppacket.ErrCommandIdInvalid

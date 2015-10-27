@@ -18,18 +18,18 @@ import "errors"
 type Type int8
 
 const (
-	Ver30 Type = 0x30
-	Ver21 Type = 0x21
-	Ver20 Type = 0x20
+	V30 Type = 0x30
+	V21 Type = 0x21
+	V20 Type = 0x20
 )
 
 func (t Type) String() string {
 	switch {
-	case t == Ver30:
+	case t == V30:
 		return "cmpp30"
-	case t == Ver21:
+	case t == V21:
 		return "cmpp21"
-	case t == Ver20:
+	case t == V20:
 		return "cmpp20"
 	default:
 		return "unknown"
@@ -43,7 +43,7 @@ const (
 	CMPP3_PACKET_MIN = 12
 )
 
-// Protocol errors
+// Protocol errors.
 var ErrTotalLengthInvalid = errors.New("Total_length in Packet data is invalid")
 var ErrCommandIdInvalid = errors.New("Command_Id in Packet data is invalid")
 

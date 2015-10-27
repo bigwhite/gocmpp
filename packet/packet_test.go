@@ -1,6 +1,6 @@
 // Copyright 2015 Tony Bai.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Licensed under the Apache License, Vsion 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
@@ -20,7 +20,7 @@ import (
 )
 
 func TestTypeString(t *testing.T) {
-	a, b, c := cmpppacket.Ver30, cmpppacket.Ver21, cmpppacket.Ver20
+	a, b, c := cmpppacket.V30, cmpppacket.V21, cmpppacket.V20
 	if a != 0x30 || b != 0x21 || c != 0x20 {
 		t.Fatal("The value of var of Type is incorrect")
 	}
