@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 
 	"github.com/bigwhite/gocmpp/packet"
@@ -91,6 +92,7 @@ func (cli *Client) SetKeepAlive(keepAlive bool) {
 }
 
 // Connect connect to the cmpp server in block mode.
+// It sends login packet, receive and parse connect response packet.
 func (cli *Client) Connect(servAddr, user, password string) error {
 	var err error
 	cli.conn, err = net.Dial("tcp", servAddr)
@@ -100,10 +102,9 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 
 	// login to the server.
 	req := &cmpppacket.CmppConnReqPkt{
-		SrcAddr:   user,
-		Secret:    password,
-		Version:   cli.typ,
-		Timestamp: 1021080510,
+		SrcAddr: user,
+		Secret:  password,
+		Version: cli.typ,
 	}
 
 	err = cli.SendPacket(req)
@@ -111,26 +112,36 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 		return err
 	}
 
-	p, err := cli.RecvAndUnpackPacket()
+	p, err := cli.RecvAndUnpackPkt()
 	if err != nil {
 		return err
 	}
 
-	resp, ok := p.(*cmpppacket.Cmpp2ConnRspPkt)
-	if !ok {
+	var oK *bool
+	var status uint8
+	if cli.typ == cmpppacket.V20 || cli.typ == cmpppacket.V21 {
+		rsp, ok := p.(*cmpppacket.Cmpp2ConnRspPkt)
+		status = rsp.Status
+		*oK = ok
+	} else {
+		rsp, ok := p.(*cmpppacket.Cmpp3ConnRspPkt)
+		status = uint8(rsp.Status)
+		*oK = ok
+	}
+
+	if !(*oK) {
 		return ErrRespNotMatch
 	}
 
-	if resp.Status != 0 {
-		return cmpppacket.ConnRspStatusErrMap[resp.Status]
+	if status != 0 {
+		return cmpppacket.ConnRspStatusErrMap[status]
 	}
 
 	return nil
 }
 
 func (cli *Client) SendPacket(packet cmpppacket.Packer) error {
-	//data, err := packet.Pack(<-cli.seqId)
-	data, err := packet.Pack(0x17)
+	data, err := packet.Pack(<-cli.seqId)
 	if err != nil {
 		return err
 	}
@@ -148,7 +159,8 @@ func (cli *Client) SendPacket(packet cmpppacket.Packer) error {
 	return nil
 }
 
-func (cli *Client) RecvAndUnpackPacket() (interface{}, error) {
+// RecvAndUnpack
+func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
 	// Total_Length in packet
 	var totalLen uint32
 	err := binary.Read(cli.conn, binary.BigEndian, &totalLen)
@@ -183,8 +195,9 @@ func (cli *Client) RecvAndUnpackPacket() (interface{}, error) {
 	}
 
 	// the left packet data (start from seqId in header)
+	// todo: may use cli.conn.SetReadDeadline to avoid longtime block
 	var leftData = make([]byte, totalLen-8)
-	_, err = cli.conn.Read(leftData)
+	_, err = io.ReadFull(cli.conn, leftData)
 	if err != nil {
 		return nil, err
 	}
