@@ -24,6 +24,7 @@ var (
 	secret            = "888888"
 	timestamp  uint32 = 1021080510
 	version           = cmpppacket.V21
+	version1          = cmpppacket.V30
 	seqId      uint32 = 0x17
 )
 
@@ -184,6 +185,87 @@ func TestCmpp2ConnRspUnpack(t *testing.T) {
 	authIsmgExpected := []byte{
 		0x6c, 0x0b, 0x84, 0x6e, 0x25, 0xba, 0xb6, 0xda,
 		0xa4, 0xed, 0x1c, 0x46, 0x6e, 0x0f, 0x4b, 0xd8,
+	}
+
+	authIsmg := []byte(p.AuthIsmg)
+	for i := 0; i < len(authIsmg); i++ {
+		if authIsmg[i] != authIsmgExpected[i] {
+			t.Fatalf("After unpack, authIsmg[%d] is %x, not equal to authIsmgExpected[%d]: %x\n", i, authIsmg[i], i, authIsmgExpected[i])
+		}
+	}
+}
+
+func TestCmpp3ConnRspPktPack(t *testing.T) {
+	//AuthSrc: 90 d0 0c 1d 51 7a bd 0b  4f 65 f6 bc f8 53 5d 16
+	authSrc := []byte{
+		0x90, 0xd0, 0x0c, 0x1d, 0x51, 0x7a, 0xbd, 0x0b,
+		0x4f, 0x65, 0xf6, 0xbc, 0xf8, 0x53, 0x5d, 0x16,
+	}
+
+	p := &cmpppacket.Cmpp3ConnRspPkt{
+		Status:  0x0,
+		Version: version1,
+		Secret:  secret,
+		AuthSrc: string(authSrc),
+	}
+
+	data, err := p.Pack(seqId)
+	if err != nil {
+		t.Fatal("Cmpp3ConnRspPkt pack error:", err)
+	}
+
+	if p.SeqId != seqId {
+		t.Fatalf("After pack, seqId is %d, not equal to expected: %d\n", p.SeqId, seqId)
+	}
+
+	// data after pack expected
+	dataExpected := []byte{
+		0x00, 0x00, 0x00, 0x21, 0x80, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00, 0x00,
+		0x79, 0x42, 0x97, 0x72, 0x74, 0x09, 0x8c, 0xf2, 0x10, 0xab, 0x0c, 0x16, 0xc3, 0x67, 0xbc, 0x8d,
+		0x30,
+	}
+
+	l1 := len(data)
+	l2 := len(dataExpected)
+	if l1 != l2 {
+		t.Fatalf("After pack, data length is %d, not equal to length expected: %d\n", l1, l2)
+	}
+
+	for i := 0; i < l1; i++ {
+		if data[i] != dataExpected[i] {
+			t.Fatalf("After pack, data[%d] is %x, not equal to dataExpected[%d]: %x\n", i, data[i], i, dataExpected[i])
+		}
+	}
+}
+
+func TestCmpp3ConnRspUnpack(t *testing.T) {
+	// cmpp3 connect response packet data:
+	data := []byte{
+		0x00, 0x00, 0x00, 0x21, 0x80, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00, 0x00,
+		0x79, 0x42, 0x97, 0x72, 0x74, 0x09, 0x8c, 0xf2, 0x10, 0xab, 0x0c, 0x16, 0xc3, 0x67, 0xbc, 0x8d,
+		0x30,
+	}
+
+	p := &cmpppacket.Cmpp3ConnRspPkt{}
+	err := p.Unpack(data[8:])
+	if err != nil {
+		t.Fatal("Cmpp3ConnRspPkt unpack error:", err)
+	}
+
+	if p.SeqId != seqId {
+		t.Fatalf("After unpack, seqId in packet is %x, not equal to the expected value: %x\n", p.SeqId, seqId)
+	}
+	if p.Version != version1 {
+		t.Fatalf("After unpack, Version in packet is %x, not equal to the expected value: %x\n",
+			p.Version, version)
+	}
+	if p.Status != 0x0 {
+		t.Fatalf("After unpack, Status in packet is %d, not equal to the expected value: %d\n", p.Status, 0x0)
+	}
+
+	authIsmgExpected := []byte{
+		0x79, 0x42, 0x97, 0x72, 0x74, 0x09, 0x8c, 0xf2,
+		0x10, 0xab, 0x0c, 0x16, 0xc3, 0x67, 0xbc, 0x8d,
 	}
 
 	authIsmg := []byte(p.AuthIsmg)

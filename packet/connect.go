@@ -70,6 +70,14 @@ type CmppConnReqPkt struct {
 	SeqId     uint32
 }
 
+// Cmpp2ConnRspPkt represents a Cmpp2 connect response packet.
+//
+// when used in server side(pack), you should initialize it with
+// correct Status, AuthSrc, Secret and Version.
+//
+// when used in client side(unpack), nothing needed to be initialized.
+// unpack will fill the Status, AuthImsg, Version and SeqId
+//
 type Cmpp2ConnRspPkt struct {
 	Status   uint8
 	AuthIsmg string
@@ -79,6 +87,14 @@ type Cmpp2ConnRspPkt struct {
 	SeqId    uint32
 }
 
+// Cmpp3ConnRspPkt represents a Cmpp3 connect response packet.
+//
+// when used in server side(pack), you should initialize it with
+// correct Status, AuthSrc, Secret and Version.
+//
+// when used in client side(unpack), nothing needed to be initialized.
+// unpack will fill the Status, AuthImsg, Version and SeqId
+//
 type Cmpp3ConnRspPkt struct {
 	Status   uint32
 	AuthIsmg string
@@ -241,6 +257,93 @@ func (p *Cmpp2ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
 // AuthenticatorIsmg, and Version.
 // Parameter data contains seqId in header and the whole packet body.
 func (p *Cmpp2ConnRspPkt) Unpack(data []byte) error {
+	var buf = bytes.NewBuffer(data)
+
+	// Sequence Id
+	err := binary.Read(buf, binary.BigEndian, &p.SeqId)
+	if err != nil {
+		return err
+	}
+
+	// Body: Status
+	err = binary.Read(buf, binary.BigEndian, &p.Status)
+	if err != nil {
+		return err
+	}
+
+	// Body: AuthenticatorISMG
+	var s = make([]byte, 16)
+	_, err = buf.Read(s)
+	if err != nil {
+		return err
+	}
+	p.AuthIsmg = string(s)
+
+	// Body: Version
+	err = binary.Read(buf, binary.BigEndian, &p.Version)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Pack packs the Cmpp3ConnRspPkt to bytes stream for server side.
+// Before calling Pack, you should initialize a Cmpp3ConnRspPkt variable
+// with correct Status,AuthenticatorSource, Secret and Version.
+func (p *Cmpp3ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
+	var packBuf = new(bytes.Buffer)
+
+	// pack header
+	err := binary.Write(packBuf, binary.BigEndian, Cmpp3ConnRspPktLen)
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(packBuf, binary.BigEndian, CMPP_CONNECT_RESP)
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(packBuf, binary.BigEndian, seqId)
+	if err != nil {
+		return nil, err
+	}
+	p.SeqId = seqId
+
+	// pack body
+	err = binary.Write(packBuf, binary.BigEndian, p.Status)
+	if err != nil {
+		return nil, err
+	}
+
+	var statusBuf = new(bytes.Buffer)
+	err = binary.Write(statusBuf, binary.BigEndian, p.Status)
+	if err != nil {
+		return nil, err
+	}
+
+	md5 := md5.Sum(bytes.Join([][]byte{statusBuf.Bytes(),
+		[]byte(p.AuthSrc),
+		[]byte(p.Secret)},
+		nil))
+	p.AuthIsmg = string(md5[:])
+
+	_, err = packBuf.WriteString(p.AuthIsmg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = binary.Write(packBuf, binary.BigEndian, p.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	return packBuf.Bytes(), nil
+}
+
+// Unpack unpack the binary byte stream to a Cmpp3ConnRspPkt variable.
+// Usually it is used in client side. After unpack, you will get SeqId, Status,
+// AuthenticatorIsmg, and Version.
+// Parameter data contains seqId in header and the whole packet body.
+func (p *Cmpp3ConnRspPkt) Unpack(data []byte) error {
 	var buf = bytes.NewBuffer(data)
 
 	// Sequence Id
