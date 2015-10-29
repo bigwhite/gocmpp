@@ -32,11 +32,11 @@ const (
 )
 
 // Errors for connect resp status.
-var ErrConnInvalidStruct = errors.New("Connect response status: invalid protocol structure")
-var ErrConnInvalidSrcAddr = errors.New("Connect response status: invalid source address")
-var ErrConnAuthFailed = errors.New("Connect response status: Auth failed")
-var ErrConnVerTooHigh = errors.New("Connect response status: protocol version is too high")
-var ErrConnOthers = errors.New("Connect response status: other errors")
+var ErrConnInvalidStruct = errors.New("connect response status: invalid protocol structure")
+var ErrConnInvalidSrcAddr = errors.New("connect response status: invalid source address")
+var ErrConnAuthFailed = errors.New("connect response status: Auth failed")
+var ErrConnVerTooHigh = errors.New("connect response status: protocol version is too high")
+var ErrConnOthers = errors.New("connect response status: other errors")
 
 var ConnRspStatusErrMap = map[uint8]error{
 	1: ErrConnInvalidStruct,

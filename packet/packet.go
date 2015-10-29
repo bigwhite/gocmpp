@@ -44,8 +44,8 @@ const (
 )
 
 // Protocol errors.
-var ErrTotalLengthInvalid = errors.New("Total_length in Packet data is invalid")
-var ErrCommandIdInvalid = errors.New("Command_Id in Packet data is invalid")
+var ErrTotalLengthInvalid = errors.New("total_length in Packet data is invalid")
+var ErrCommandIdInvalid = errors.New("command_Id in Packet data is invalid")
 
 type CommandId uint32
 

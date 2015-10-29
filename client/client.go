@@ -24,8 +24,8 @@ import (
 	"github.com/bigwhite/gocmpp/packet"
 )
 
-var ErrNotCompleted = errors.New("Data not being handled completed")
-var ErrRespNotMatch = errors.New("The response is not matched with the request")
+var ErrNotCompleted = errors.New("data not being handled completed")
+var ErrRespNotMatch = errors.New("the response is not matched with the request")
 
 // Client stands for one client-side instance, just like a session.
 // It may connect to the server, send & recv cmpp packets and terminate the connection.
@@ -100,7 +100,7 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 		return err
 	}
 
-	// login to the server.
+	// Login to the server.
 	req := &cmpppacket.CmppConnReqPkt{
 		SrcAddr: user,
 		Secret:  password,
@@ -140,6 +140,7 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 	return nil
 }
 
+// SendPacket pack the cmpp packet structure and send it to the other peer.
 func (cli *Client) SendPacket(packet cmpppacket.Packer) error {
 	data, err := packet.Pack(<-cli.seqId)
 	if err != nil {
@@ -159,7 +160,7 @@ func (cli *Client) SendPacket(packet cmpppacket.Packer) error {
 	return nil
 }
 
-// RecvAndUnpack
+// RecvAndUnpackPkt receives cmpp byte stream, and unpack it to some cmpp packet structure.
 func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
 	// Total_Length in packet
 	var totalLen uint32
@@ -167,7 +168,6 @@ func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("cmpp packet totallen =", totalLen)
 
 	if cli.typ == cmpppacket.V30 {
 		if totalLen < cmpppacket.CMPP3_PACKET_MIN || totalLen > cmpppacket.CMPP3_PACKET_MAX {
@@ -187,21 +187,19 @@ func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("cmpp packet commandid:", commandId)
 
 	if !((commandId > cmpppacket.CMPP_REQUEST_MIN && commandId < cmpppacket.CMPP_REQUEST_MAX) ||
 		(commandId > cmpppacket.CMPP_RESPONSE_MIN && commandId < cmpppacket.CMPP_RESPONSE_MAX)) {
 		return nil, cmpppacket.ErrCommandIdInvalid
 	}
 
-	// the left packet data (start from seqId in header)
+	// The left packet data (start from seqId in header).
 	// todo: may use cli.conn.SetReadDeadline to avoid longtime block
 	var leftData = make([]byte, totalLen-8)
 	_, err = io.ReadFull(cli.conn, leftData)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(hex.Dump(leftData))
 
 	var p cmpppacket.Packer
 	switch commandId {
