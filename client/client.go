@@ -117,19 +117,19 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 		return err
 	}
 
-	var oK *bool
+	var ok bool
 	var status uint8
 	if cli.typ == cmpppacket.V20 || cli.typ == cmpppacket.V21 {
-		rsp, ok := p.(*cmpppacket.Cmpp2ConnRspPkt)
+		var rsp *cmpppacket.Cmpp2ConnRspPkt
+		rsp, ok = p.(*cmpppacket.Cmpp2ConnRspPkt)
 		status = rsp.Status
-		*oK = ok
 	} else {
-		rsp, ok := p.(*cmpppacket.Cmpp3ConnRspPkt)
+		var rsp *cmpppacket.Cmpp3ConnRspPkt
+		rsp, ok = p.(*cmpppacket.Cmpp3ConnRspPkt)
 		status = uint8(rsp.Status)
-		*oK = ok
 	}
 
-	if !(*oK) {
+	if ok {
 		return ErrRespNotMatch
 	}
 
