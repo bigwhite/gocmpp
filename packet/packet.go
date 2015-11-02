@@ -173,9 +173,10 @@ type packetWriter struct {
 	err *OpError
 }
 
-func newPacketWriter() *packetWriter {
+func newPacketWriter(initSize uint32) *packetWriter {
+	buf := make([]byte, 0, initSize)
 	return &packetWriter{
-		wb: new(bytes.Buffer),
+		wb: bytes.NewBuffer(buf),
 	}
 }
 
@@ -183,7 +184,8 @@ func (w *packetWriter) Bytes() ([]byte, error) {
 	if w.err != nil {
 		return nil, w.err
 	}
-	return w.wb.Bytes(), nil
+	len := w.wb.Len()
+	return (w.wb.Bytes())[:len], nil
 }
 
 func (w *packetWriter) WriteString(s string) {

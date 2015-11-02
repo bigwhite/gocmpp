@@ -108,7 +108,7 @@ type Cmpp3ConnRspPkt struct {
 // Before calling Pack, you should initialize a CmppConnReqPkt variable
 // with correct SourceAddr(SrcAddr), Secret and Version.
 func (p *CmppConnReqPkt) Pack(seqId uint32) ([]byte, error) {
-	var w = newPacketWriter()
+	var w = newPacketWriter(CmppConnReqPktLen)
 
 	// Pack header
 	w.WriteInt(binary.BigEndian, CmppConnReqPktLen)
@@ -171,7 +171,7 @@ func (p *CmppConnReqPkt) Unpack(data []byte) error {
 // Before calling Pack, you should initialize a Cmpp2ConnRspPkt variable
 // with correct Status,AuthenticatorSource, Secret and Version.
 func (p *Cmpp2ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
-	var w = newPacketWriter()
+	var w = newPacketWriter(Cmpp2ConnRspPktLen)
 
 	// pack header
 	w.WriteInt(binary.BigEndian, Cmpp2ConnRspPktLen)
@@ -221,7 +221,7 @@ func (p *Cmpp2ConnRspPkt) Unpack(data []byte) error {
 // Before calling Pack, you should initialize a Cmpp3ConnRspPkt variable
 // with correct Status,AuthenticatorSource, Secret and Version.
 func (p *Cmpp3ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
-	var w = newPacketWriter()
+	var w = newPacketWriter(Cmpp3ConnRspPktLen)
 
 	// pack header
 	w.WriteInt(binary.BigEndian, Cmpp3ConnRspPktLen)

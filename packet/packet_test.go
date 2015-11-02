@@ -111,7 +111,7 @@ func TestOpError(t *testing.T) {
 }
 
 func TestPacketWriter(t *testing.T) {
-	w1 := newPacketWriter()
+	w1 := newPacketWriter(11)
 
 	w1.WriteString("hello")
 	w1.WriteString(" golang")
@@ -126,7 +126,7 @@ func TestPacketWriter(t *testing.T) {
 	}
 
 	var i uint16 = 0x1234
-	w2 := newPacketWriter()
+	w2 := newPacketWriter(10)
 	w2.WriteInt(binary.BigEndian, i)
 
 	s, e = w2.Bytes()
