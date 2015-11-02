@@ -206,7 +206,11 @@ func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
 	case cmpppacket.CMPP_CONNECT:
 		p = &cmpppacket.CmppConnReqPkt{}
 	case cmpppacket.CMPP_CONNECT_RESP:
-		p = &cmpppacket.Cmpp2ConnRspPkt{}
+		if commandId == cmpppacket.V30 {
+			p = &cmpppacket.Cmpp3ConnRspPkt{}
+		} else {
+			p = &cmpppacket.Cmpp2ConnRspPkt{}
+		}
 	default:
 		p = nil
 		return nil, cmpppacket.ErrCommandIdInvalid
