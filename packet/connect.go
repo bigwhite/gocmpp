@@ -108,21 +108,12 @@ type Cmpp3ConnRspPkt struct {
 // Before calling Pack, you should initialize a CmppConnReqPkt variable
 // with correct SourceAddr(SrcAddr), Secret and Version.
 func (p *CmppConnReqPkt) Pack(seqId uint32) ([]byte, error) {
-	var packBuf = new(bytes.Buffer)
+	var w = newPacketWriter()
 
 	// Pack header
-	err := binary.Write(packBuf, binary.BigEndian, CmppConnReqPktLen)
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(packBuf, binary.BigEndian, uint32(CMPP_CONNECT))
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(packBuf, binary.BigEndian, seqId)
-	if err != nil {
-		return nil, err
-	}
+	w.WriteInt(binary.BigEndian, CmppConnReqPktLen)
+	w.WriteInt(binary.BigEndian, CMPP_CONNECT)
+	w.WriteInt(binary.BigEndian, seqId)
 	p.SeqId = seqId
 
 	var ts string
@@ -133,10 +124,7 @@ func (p *CmppConnReqPkt) Pack(seqId uint32) ([]byte, error) {
 	}
 
 	// Pack body
-	_, err = packBuf.WriteString(p.SrcAddr)
-	if err != nil {
-		return nil, err
-	}
+	w.WriteString(p.SrcAddr)
 
 	md5 := md5.Sum(bytes.Join([][]byte{[]byte(p.SrcAddr),
 		make([]byte, 9),
@@ -145,111 +133,65 @@ func (p *CmppConnReqPkt) Pack(seqId uint32) ([]byte, error) {
 		nil))
 	p.AuthSrc = string(md5[:])
 
-	_, err = packBuf.WriteString(p.AuthSrc)
-	if err != nil {
-		return nil, err
-	}
+	w.WriteString(p.AuthSrc)
+	w.WriteInt(binary.BigEndian, p.Version)
+	w.WriteInt(binary.BigEndian, p.Timestamp)
 
-	err = binary.Write(packBuf, binary.BigEndian, p.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	err = binary.Write(packBuf, binary.BigEndian, p.Timestamp)
-	if err != nil {
-		return nil, err
-	}
-
-	return packBuf.Bytes(), nil
+	return w.Bytes()
 }
 
 // Unpack unpack the binary byte stream to a CmppConnReqPkt variable.
 // Usually it is used in server side. After unpack, you will get SeqId, SourceAddr,
 // AuthenticatorSource, Version and Timestamp.
 func (p *CmppConnReqPkt) Unpack(data []byte) error {
-	var buf = bytes.NewBuffer(data)
+	var r = newPacketReader(data)
 
 	// Sequence Id
-	err := binary.Read(buf, binary.BigEndian, &p.SeqId)
-	if err != nil {
-		return err
-	}
+	r.ReadInt(binary.BigEndian, &p.SeqId)
 
 	// Body: Source_Addr
 	var sa = make([]byte, 6)
-	_, err = buf.Read(sa)
-	if err != nil {
-		return err
-	}
+	r.ReadBytes(sa)
 	p.SrcAddr = string(sa)
 
 	// Body: AuthSrc
 	var as = make([]byte, 16)
-	_, err = buf.Read(as)
-	if err != nil {
-		return err
-	}
+	r.ReadBytes(as)
 	p.AuthSrc = string(as)
 
 	// Body: Version
-	err = binary.Read(buf, binary.BigEndian, &p.Version)
-	if err != nil {
-		return err
-	}
-
+	r.ReadInt(binary.BigEndian, &p.Version)
 	// Body: timestamp
-	err = binary.Read(buf, binary.BigEndian, &p.Timestamp)
-	if err != nil {
-		return err
-	}
+	r.ReadInt(binary.BigEndian, &p.Timestamp)
 
-	return nil
+	return r.Error()
 }
 
 // Pack packs the Cmpp2ConnRspPkt to bytes stream for server side.
 // Before calling Pack, you should initialize a Cmpp2ConnRspPkt variable
 // with correct Status,AuthenticatorSource, Secret and Version.
 func (p *Cmpp2ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
-	var packBuf = new(bytes.Buffer)
+	var w = newPacketWriter()
 
 	// pack header
-	err := binary.Write(packBuf, binary.BigEndian, Cmpp2ConnRspPktLen)
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(packBuf, binary.BigEndian, CMPP_CONNECT_RESP)
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(packBuf, binary.BigEndian, seqId)
-	if err != nil {
-		return nil, err
-	}
+	w.WriteInt(binary.BigEndian, Cmpp2ConnRspPktLen)
+	w.WriteInt(binary.BigEndian, CMPP_CONNECT_RESP)
+	w.WriteInt(binary.BigEndian, seqId)
 	p.SeqId = seqId
 
 	// pack body
-	err = binary.Write(packBuf, binary.BigEndian, p.Status)
-	if err != nil {
-		return nil, err
-	}
+	w.WriteInt(binary.BigEndian, p.Status)
 
 	md5 := md5.Sum(bytes.Join([][]byte{[]byte{p.Status},
 		[]byte(p.AuthSrc),
 		[]byte(p.Secret)},
 		nil))
 	p.AuthIsmg = string(md5[:])
+	w.WriteString(p.AuthIsmg)
 
-	_, err = packBuf.WriteString(p.AuthIsmg)
-	if err != nil {
-		return nil, err
-	}
+	w.WriteInt(binary.BigEndian, p.Version)
 
-	err = binary.Write(packBuf, binary.BigEndian, p.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	return packBuf.Bytes(), nil
+	return w.Bytes()
 }
 
 // Unpack unpack the binary byte stream to a Cmpp2ConnRspPkt variable.
@@ -257,65 +199,41 @@ func (p *Cmpp2ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
 // AuthenticatorIsmg, and Version.
 // Parameter data contains seqId in header and the whole packet body.
 func (p *Cmpp2ConnRspPkt) Unpack(data []byte) error {
-	var buf = bytes.NewBuffer(data)
+	var r = newPacketReader(data)
 
 	// Sequence Id
-	err := binary.Read(buf, binary.BigEndian, &p.SeqId)
-	if err != nil {
-		return err
-	}
+	r.ReadInt(binary.BigEndian, &p.SeqId)
 
 	// Body: Status
-	err = binary.Read(buf, binary.BigEndian, &p.Status)
-	if err != nil {
-		return err
-	}
+	r.ReadInt(binary.BigEndian, &p.Status)
 
 	// Body: AuthenticatorISMG
 	var s = make([]byte, 16)
-	_, err = buf.Read(s)
-	if err != nil {
-		return err
-	}
+	r.ReadBytes(s)
 	p.AuthIsmg = string(s)
 
 	// Body: Version
-	err = binary.Read(buf, binary.BigEndian, &p.Version)
-	if err != nil {
-		return err
-	}
-	return nil
+	r.ReadInt(binary.BigEndian, &p.Version)
+	return r.Error()
 }
 
 // Pack packs the Cmpp3ConnRspPkt to bytes stream for server side.
 // Before calling Pack, you should initialize a Cmpp3ConnRspPkt variable
 // with correct Status,AuthenticatorSource, Secret and Version.
 func (p *Cmpp3ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
-	var packBuf = new(bytes.Buffer)
+	var w = newPacketWriter()
 
 	// pack header
-	err := binary.Write(packBuf, binary.BigEndian, Cmpp3ConnRspPktLen)
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(packBuf, binary.BigEndian, CMPP_CONNECT_RESP)
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(packBuf, binary.BigEndian, seqId)
-	if err != nil {
-		return nil, err
-	}
+	w.WriteInt(binary.BigEndian, Cmpp3ConnRspPktLen)
+	w.WriteInt(binary.BigEndian, CMPP_CONNECT_RESP)
+	w.WriteInt(binary.BigEndian, seqId)
 	p.SeqId = seqId
 
 	// pack body
-	err = binary.Write(packBuf, binary.BigEndian, p.Status)
-	if err != nil {
-		return nil, err
-	}
+	w.WriteInt(binary.BigEndian, p.Status)
 
 	var statusBuf = new(bytes.Buffer)
-	err = binary.Write(statusBuf, binary.BigEndian, p.Status)
+	err := binary.Write(statusBuf, binary.BigEndian, p.Status)
 	if err != nil {
 		return nil, err
 	}
@@ -325,18 +243,11 @@ func (p *Cmpp3ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
 		[]byte(p.Secret)},
 		nil))
 	p.AuthIsmg = string(md5[:])
+	w.WriteString(p.AuthIsmg)
 
-	_, err = packBuf.WriteString(p.AuthIsmg)
-	if err != nil {
-		return nil, err
-	}
+	w.WriteInt(binary.BigEndian, p.Version)
 
-	err = binary.Write(packBuf, binary.BigEndian, p.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	return packBuf.Bytes(), nil
+	return w.Bytes()
 }
 
 // Unpack unpack the binary byte stream to a Cmpp3ConnRspPkt variable.
@@ -344,32 +255,20 @@ func (p *Cmpp3ConnRspPkt) Pack(seqId uint32) ([]byte, error) {
 // AuthenticatorIsmg, and Version.
 // Parameter data contains seqId in header and the whole packet body.
 func (p *Cmpp3ConnRspPkt) Unpack(data []byte) error {
-	var buf = bytes.NewBuffer(data)
+	var r = newPacketReader(data)
 
 	// Sequence Id
-	err := binary.Read(buf, binary.BigEndian, &p.SeqId)
-	if err != nil {
-		return err
-	}
+	r.ReadInt(binary.BigEndian, &p.SeqId)
 
 	// Body: Status
-	err = binary.Read(buf, binary.BigEndian, &p.Status)
-	if err != nil {
-		return err
-	}
+	r.ReadInt(binary.BigEndian, &p.Status)
 
 	// Body: AuthenticatorISMG
 	var s = make([]byte, 16)
-	_, err = buf.Read(s)
-	if err != nil {
-		return err
-	}
+	r.ReadBytes(s)
 	p.AuthIsmg = string(s)
 
 	// Body: Version
-	err = binary.Read(buf, binary.BigEndian, &p.Version)
-	if err != nil {
-		return err
-	}
-	return nil
+	r.ReadInt(binary.BigEndian, &p.Version)
+	return r.Error()
 }

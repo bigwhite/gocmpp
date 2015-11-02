@@ -13,7 +13,12 @@
 
 package cmpppacket
 
-import "errors"
+import (
+	"bytes"
+	"encoding/binary"
+	"errors"
+	"fmt"
+)
 
 type Type int8
 
@@ -127,4 +132,144 @@ func (id CommandId) String() string {
 type Packer interface {
 	Pack(seqId uint32) ([]byte, error)
 	Unpack(data []byte) error
+}
+
+// OpError is the error type usually returned by functions in the cmpppacket
+// package. It describes the operation and the error which the operation caused.
+type OpError struct {
+	// err is the error that occurred during the operation.
+	// it is the origin error.
+	err error
+
+	// op is the operation which caused the error, such as
+	// some "read" or "write" in packetWriter or packetReader.
+	op string
+}
+
+func NewOpError(e error, op string) *OpError {
+	return &OpError{
+		err: e,
+		op:  op,
+	}
+}
+
+func (e *OpError) Error() string {
+	if e.err == nil {
+		return "<nil>"
+	}
+	return e.op + " error: " + e.err.Error()
+}
+
+func (e *OpError) Cause() error {
+	return e.err
+}
+
+func (e *OpError) Op() string {
+	return e.op
+}
+
+type packetWriter struct {
+	wb  *bytes.Buffer
+	err *OpError
+}
+
+func newPacketWriter() *packetWriter {
+	return &packetWriter{
+		wb: new(bytes.Buffer),
+	}
+}
+
+func (w *packetWriter) Bytes() ([]byte, error) {
+	if w.err != nil {
+		return nil, w.err
+	}
+	return w.wb.Bytes(), nil
+}
+
+func (w *packetWriter) WriteString(s string) {
+	if w.err != nil {
+		return
+	}
+
+	l1 := len(s)
+	l2 := l1
+	if l2 > 10 {
+		l2 = 10
+	}
+
+	n, err := w.wb.WriteString(s)
+	if err != nil {
+		w.err = NewOpError(err,
+			fmt.Sprintf("packetWriter.WriteString writes: %s", s[0:l2]))
+		return
+	}
+
+	if n != l1 {
+		w.err = NewOpError(fmt.Errorf("WriteString writes %d bytes, not equal to %d we expected", n, l1),
+			fmt.Sprintf("packetWriter.WriteString writes: %s", s[0:l2]))
+		return
+	}
+}
+
+func (w *packetWriter) WriteInt(order binary.ByteOrder, data interface{}) {
+	if w.err != nil {
+		return
+	}
+
+	err := binary.Write(w.wb, order, data)
+	if err != nil {
+		w.err = NewOpError(err,
+			fmt.Sprintf("packetWriter.WriteInt writes: %#v", data))
+		return
+	}
+}
+
+type packetReader struct {
+	rb  *bytes.Buffer
+	err *OpError
+}
+
+func newPacketReader(data []byte) *packetReader {
+	return &packetReader{
+		rb: bytes.NewBuffer(data),
+	}
+}
+
+func (r *packetReader) ReadInt(order binary.ByteOrder, value interface{}) {
+	if r.err != nil {
+		return
+	}
+
+	err := binary.Read(r.rb, order, value)
+	if err != nil {
+		r.err = NewOpError(err,
+			"packetReader.ReadInt")
+		return
+	}
+}
+
+func (r *packetReader) ReadBytes(s []byte) {
+	if r.err != nil {
+		return
+	}
+
+	n, err := r.rb.Read(s)
+	if err != nil {
+		r.err = NewOpError(err,
+			"packetReader.ReadBytes")
+		return
+	}
+
+	if n != len(s) {
+		r.err = NewOpError(fmt.Errorf("ReadBytes reads %d bytes, not equal to %d we expected", n, len(s)),
+			"packetWriter.ReadBytes")
+		return
+	}
+}
+
+func (r *packetReader) Error() error {
+	if r.err != nil {
+		return r.err
+	}
+	return nil
 }
