@@ -18,6 +18,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type Type int8
@@ -42,11 +43,15 @@ func (t Type) String() string {
 }
 
 const (
+	CMPP_HEADER_LEN  = 12
 	CMPP2_PACKET_MAX = 2477
 	CMPP2_PACKET_MIN = 12
 	CMPP3_PACKET_MAX = 3335
 	CMPP3_PACKET_MIN = 12
 )
+
+// Common errors.
+var ErrMethodParamsInvalid = errors.New("params passed to method is invalid")
 
 // Protocol errors.
 var ErrTotalLengthInvalid = errors.New("total_length in Packet data is invalid")
@@ -188,6 +193,41 @@ func (w *packetWriter) Bytes() ([]byte, error) {
 	return (w.wb.Bytes())[:len], nil
 }
 
+func (w *packetWriter) WriteByte(b byte) {
+	if w.err != nil {
+		return
+	}
+
+	err := w.wb.WriteByte(b)
+	if err != nil {
+		w.err = NewOpError(err,
+			fmt.Sprintf("packetWriter.WriteByte writes: %x", b))
+		return
+	}
+}
+
+// WriteFixedSizeString writes a string to buffer, if the length of s is less than size,
+// Pad binary zero to the left bytes.
+func (w *packetWriter) WriteFixedSizeString(s string, size int) {
+	if w.err != nil {
+		return
+	}
+
+	l1 := len(s)
+	l2 := l1
+	if l2 > 10 {
+		l2 = 10
+	}
+
+	if l1 > size {
+		w.err = NewOpError(ErrMethodParamsInvalid,
+			fmt.Sprintf("packetWriter.WriteFixedSizeString writes: %s", s[0:l2]))
+		return
+	}
+
+	w.WriteString(strings.Join([]string{s, string(make([]byte, size-l1))}, ""))
+}
+
 func (w *packetWriter) WriteString(s string) {
 	if w.err != nil {
 		return
@@ -237,6 +277,20 @@ func newPacketReader(data []byte) *packetReader {
 	}
 }
 
+func (r *packetReader) ReadByte() byte {
+	if r.err != nil {
+		return 0
+	}
+
+	b, err := r.rb.ReadByte()
+	if err != nil {
+		r.err = NewOpError(err,
+			"packetReader.ReadByte")
+		return 0
+	}
+	return b
+}
+
 func (r *packetReader) ReadInt(order binary.ByteOrder, value interface{}) {
 	if r.err != nil {
 		return
@@ -266,6 +320,35 @@ func (r *packetReader) ReadBytes(s []byte) {
 		r.err = NewOpError(fmt.Errorf("ReadBytes reads %d bytes, not equal to %d we expected", n, len(s)),
 			"packetWriter.ReadBytes")
 		return
+	}
+}
+
+// ReadCString read bytes from packerReader's inner buffer,
+// it would trim the tail-zero byte and the bytes after that.
+func (r *packetReader) ReadCString(length int) []byte {
+	if r.err != nil {
+		return nil
+	}
+
+	var tmp = make([]byte, length)
+	n, err := r.rb.Read(tmp)
+	if err != nil {
+		r.err = NewOpError(err,
+			"packetReader.ReadCString")
+		return nil
+	}
+
+	if n != length {
+		r.err = NewOpError(fmt.Errorf("ReadCString reads %d bytes, not equal to %d we expected", n, length),
+			"packetWriter.ReadCString")
+		return nil
+	}
+
+	i := bytes.IndexByte(tmp, 0)
+	if i == -1 {
+		return tmp
+	} else {
+		return tmp[:i]
 	}
 }
 

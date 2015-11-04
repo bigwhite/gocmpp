@@ -16,6 +16,7 @@ package cmpppacket
 import (
 	"encoding/binary"
 	"errors"
+	"io"
 	"testing"
 )
 
@@ -111,35 +112,71 @@ func TestOpError(t *testing.T) {
 }
 
 func TestPacketWriter(t *testing.T) {
+	//test WriteString
 	w1 := newPacketWriter(11)
 
 	w1.WriteString("hello")
 	w1.WriteString(" golang")
 
-	s, e := w1.Bytes()
+	s1, e := w1.Bytes()
 	if e != nil {
 		t.Fatalf("packetWriter's err : actual [%#v], wanted[nil]\n", e)
 	}
 
-	if string(s) != "hello golang" {
-		t.Fatalf("packetWriter's err : actual [%s], wanted[%s]\n", string(s), "hello golang")
+	if string(s1) != "hello golang" {
+		t.Fatalf("packetWriter's err : actual [%s], wanted[%s]\n", string(s1), "hello golang")
 	}
 
+	// test WriteInt
 	var i uint16 = 0x1234
 	w2 := newPacketWriter(10)
 	w2.WriteInt(binary.BigEndian, i)
 
-	s, e = w2.Bytes()
+	s2, e := w2.Bytes()
 	if e != nil {
 		t.Fatalf("packetWriter's err : actual [%#v], wanted[nil]\n", e)
 	}
 
-	if s[0] != 0x12 || s[1] != 0x34 {
-		t.Fatalf("packetWriter's err : actual [%#v], wanted[%#v]\n", s, []byte{0x12, 0x34})
+	if s2[0] != 0x12 || s2[1] != 0x34 {
+		t.Fatalf("packetWriter's err : actual [%#v], wanted[%#v]\n", s2, []byte{0x12, 0x34})
+	}
+
+	// test WriteFixedSizeString
+	w3 := newPacketWriter(10)
+	w3.WriteFixedSizeString("hello", 9)
+	s3, e := w3.Bytes()
+	if e != nil {
+		t.Fatalf("packetWriter's err : actual [%#v], wanted[nil]\n", e)
+	}
+
+	if len(s3) != 9 {
+		t.Fatalf("packetWriter's err : actual [%d], wanted[%d]\n", len(s3), 9)
+	}
+
+	if string(s3[:5]) != "hello" {
+		t.Fatalf("packetWriter's err : actual [%s], wanted[%s]\n", string(s3[:5]), "hello")
+	}
+
+	// test WriteByte
+	w4 := newPacketWriter(10)
+	w4.WriteByte('h')
+	w4.WriteByte('e')
+	s4, e := w4.Bytes()
+	if e != nil {
+		t.Fatalf("packetWriter's err : actual [%#v], wanted[nil]\n", e)
+	}
+
+	if len(s4) != 2 {
+		t.Fatalf("packetWriter's err : actual [%d], wanted[%d]\n", len(s4), 2)
+	}
+
+	if string(s4[:]) != "he" {
+		t.Fatalf("packetWriter's err : actual [%s], wanted[%s]\n", string(s4[:]), "he")
 	}
 }
 
 func TestPacketReader(t *testing.T) {
+	// test ReadBytes
 	s1 := []byte{'h', 'e', 'l', 'l', 'o'}
 	r1 := newPacketReader(s1)
 
@@ -153,12 +190,13 @@ func TestPacketReader(t *testing.T) {
 		t.Fatalf("packetReader 's err : actual [%#v], wanted[%#v]\n", d1, []byte{'h', 'e', 'l'})
 	}
 
-	d2 := make([]byte, 3)
-	r1.ReadBytes(d2)
+	d1 = make([]byte, 3)
+	r1.ReadBytes(d1)
 	if r1.Error() == nil {
 		t.Fatal("packetReader's err : actual nil, wanted non-nil")
 	}
 
+	// test ReadInt
 	s2 := []byte{0x12, 0x34}
 	var i uint16
 	r2 := newPacketReader(s2)
@@ -168,5 +206,50 @@ func TestPacketReader(t *testing.T) {
 	}
 	if i != 0x1234 {
 		t.Fatalf("packetReader's err : actual [%d], wanted[%d]\n", i, 0x1234)
+	}
+
+	// test ReadByte
+	s3 := []byte{'h', 'e', 'l', 'l', 'o'}
+	r3 := newPacketReader(s3)
+	c := r3.ReadByte()
+	if c != 'h' {
+		t.Fatalf("packetReader's err : actual [%c], wanted[%c]\n", c, 'h')
+	}
+	r3.ReadByte()
+	r3.ReadByte()
+	c = r3.ReadByte()
+	if c != 'l' {
+		t.Fatalf("packetReader's err : actual [%c], wanted[%c]\n", c, 'l')
+	}
+	c = r3.ReadByte()
+	if c != 'o' {
+		t.Fatalf("packetReader's err : actual [%c], wanted[%c]\n", c, 'o')
+	}
+
+	c = r3.ReadByte()
+	if c != 0 {
+		t.Fatalf("packetReader's err : actual [%x], wanted[%d]\n", c, 0)
+	}
+
+	e := r3.Error()
+	if e == nil {
+		t.Fatal("packetReader's err : actual nil, wanted non-nil")
+	}
+
+	oe, _ := e.(*OpError)
+	if oe.Cause() != io.EOF {
+		t.Fatalf("packetReader's err : actual [%#v], wanted io.EOF\n", oe)
+	}
+
+	// test ReadCString
+	s4 := []byte{'h', 'e', 'l', 'l', 'o', 0, 0, 0, 0}
+	r4 := newPacketReader(s4)
+	d4 := r4.ReadCString(9)
+
+	if len(d4) != 5 {
+		t.Fatalf("packetReader's err : actual [%d], wanted [%d]\n", len(d4), 5)
+	}
+	if string(d4) != "hello" {
+		t.Fatalf("packetReader's err : actual [%s], wanted [%s]\n", string(d4), "hello")
 	}
 }
