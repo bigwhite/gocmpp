@@ -185,6 +185,10 @@ func newPacketWriter(initSize uint32) *packetWriter {
 	}
 }
 
+// Bytes returns a slice of the contents of the inner buffer;
+// If the caller changes the contents of the
+// returned slice, the contents of the buffer will change provided there
+// are no intervening method calls on the Buffer.
 func (w *packetWriter) Bytes() ([]byte, error) {
 	if w.err != nil {
 		return nil, w.err
@@ -193,6 +197,8 @@ func (w *packetWriter) Bytes() ([]byte, error) {
 	return (w.wb.Bytes())[:len], nil
 }
 
+// WriteInt appends the byte of b to the inner buffer, growing the buffer as
+// needed.
 func (w *packetWriter) WriteByte(b byte) {
 	if w.err != nil {
 		return
@@ -228,6 +234,8 @@ func (w *packetWriter) WriteFixedSizeString(s string, size int) {
 	w.WriteString(strings.Join([]string{s, string(make([]byte, size-l1))}, ""))
 }
 
+// WriteString appends the contents of s to the inner buffer, growing the buffer as
+// needed.
 func (w *packetWriter) WriteString(s string) {
 	if w.err != nil {
 		return
@@ -253,6 +261,8 @@ func (w *packetWriter) WriteString(s string) {
 	}
 }
 
+// WriteInt appends the content of data to the inner buffer in order, growing the buffer as
+// needed.
 func (w *packetWriter) WriteInt(order binary.ByteOrder, data interface{}) {
 	if w.err != nil {
 		return
@@ -277,6 +287,8 @@ func newPacketReader(data []byte) *packetReader {
 	}
 }
 
+// ReadByte reads and returns the next byte from the inner buffer.
+// If no byte is available, it returns an OpError.
 func (r *packetReader) ReadByte() byte {
 	if r.err != nil {
 		return 0
@@ -291,12 +303,17 @@ func (r *packetReader) ReadByte() byte {
 	return b
 }
 
-func (r *packetReader) ReadInt(order binary.ByteOrder, value interface{}) {
+// Read reads structured binary data from r into data.
+// Data must be a pointer to a fixed-size value or a slice
+// of fixed-size values.
+// Bytes read from r are decoded using the specified byte order
+// and written to successive fields of the data.
+func (r *packetReader) ReadInt(order binary.ByteOrder, data interface{}) {
 	if r.err != nil {
 		return
 	}
 
-	err := binary.Read(r.rb, order, value)
+	err := binary.Read(r.rb, order, data)
 	if err != nil {
 		r.err = NewOpError(err,
 			"packetReader.ReadInt")
@@ -304,6 +321,8 @@ func (r *packetReader) ReadInt(order binary.ByteOrder, value interface{}) {
 	}
 }
 
+// ReadBytes reads the next len(s) bytes from the inner buffer to s.
+// If the buffer has no data to return, an OpError would be stored in r.err.
 func (r *packetReader) ReadBytes(s []byte) {
 	if r.err != nil {
 		return
@@ -352,6 +371,7 @@ func (r *packetReader) ReadCString(length int) []byte {
 	}
 }
 
+// Error return the inner err.
 func (r *packetReader) Error() error {
 	if r.err != nil {
 		return r.err
