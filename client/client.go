@@ -15,9 +15,7 @@ package cmppclient
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 
@@ -147,14 +145,12 @@ func (cli *Client) SendPacket(packet cmpppacket.Packer) error {
 		return err
 	}
 
-	fmt.Println(hex.Dump(data))
-
-	length, err := cli.conn.Write(data)
+	n, err := cli.conn.Write(data)
 	if err != nil {
 		return nil
 	}
 
-	if length != len(data) {
+	if n != len(data) {
 		return ErrNotCompleted
 	}
 	return nil
