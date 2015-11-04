@@ -207,9 +207,33 @@ func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
 		} else {
 			p = &cmpppacket.Cmpp2ConnRspPkt{}
 		}
+	case cmpppacket.CMPP_SUBMIT:
+		if cli.typ == cmpppacket.V30 {
+			p = &cmpppacket.Cmpp3SubmitReqPkt{}
+		} else {
+			p = &cmpppacket.Cmpp2SubmitReqPkt{}
+		}
+	case cmpppacket.CMPP_SUBMIT_RESP:
+		if cli.typ == cmpppacket.V30 {
+			p = &cmpppacket.Cmpp3SubmitRspPkt{}
+		} else {
+			p = &cmpppacket.Cmpp2SubmitRspPkt{}
+		}
+	case cmpppacket.CMPP_FWD:
+		if cli.typ == cmpppacket.V30 {
+			p = &cmpppacket.Cmpp3FwdReqPkt{}
+		} else {
+			p = &cmpppacket.Cmpp2FwdReqPkt{}
+		}
+	case cmpppacket.CMPP_FWD_RESP:
+		if cli.typ == cmpppacket.V30 {
+			p = &cmpppacket.Cmpp3FwdRspPkt{}
+		} else {
+			p = &cmpppacket.Cmpp2FwdRspPkt{}
+		}
 	default:
 		p = nil
-		return nil, cmpppacket.ErrCommandIdInvalid
+		return nil, cmpppacket.ErrCommandIdNotSupported
 	}
 
 	err = p.Unpack(leftData)
