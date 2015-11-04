@@ -97,6 +97,9 @@ type Cmpp3SubmitRspPkt struct {
 	SeqId uint32
 }
 
+// Pack packs the Cmpp2SubmitReqPkt to bytes stream for client side.
+// Before calling Pack, you should initialize a Cmpp2SubmitReqPkt variable
+// with correct field value.
 func (p *Cmpp2SubmitReqPkt) Pack(seqId uint32) ([]byte, error) {
 	var pktLen = uint32(CMPP_HEADER_LEN + 117 + p.DestUsrTl*21 + 1 + p.MsgLength + 8)
 
@@ -142,6 +145,9 @@ func (p *Cmpp2SubmitReqPkt) Pack(seqId uint32) ([]byte, error) {
 	return w.Bytes()
 }
 
+// Unpack unpack the binary byte stream to a Cmpp2SubmitReqPkt variable.
+// Usually it is used in server side. After unpack, you will get all value of fields in
+// Cmpp2SubmitReqPkt struct.
 func (p *Cmpp2SubmitReqPkt) Unpack(data []byte) error {
 	var r = newPacketReader(data)
 
@@ -204,6 +210,9 @@ func (p *Cmpp2SubmitReqPkt) Unpack(data []byte) error {
 	return r.Error()
 }
 
+// Pack packs the Cmpp2SubmitRspPkt to bytes stream for Server side.
+// Before calling Pack, you should initialize a Cmpp2SubmitRspPkt variable
+// with correct field value.
 func (p *Cmpp2SubmitRspPkt) Pack(seqId uint32) ([]byte, error) {
 	var pktLen = uint32(CMPP_HEADER_LEN + 8 + 1)
 
@@ -222,6 +231,9 @@ func (p *Cmpp2SubmitRspPkt) Pack(seqId uint32) ([]byte, error) {
 	return w.Bytes()
 }
 
+// Unpack unpack the binary byte stream to a Cmpp2SubmitRspPkt variable.
+// Usually it is used in client side. After unpack, you will get all value of fields in
+// Cmpp2SubmitRspPkt struct.
 func (p *Cmpp2SubmitRspPkt) Unpack(data []byte) error {
 	var r = newPacketReader(data)
 
@@ -234,6 +246,9 @@ func (p *Cmpp2SubmitRspPkt) Unpack(data []byte) error {
 	return r.Error()
 }
 
+// Pack packs the Cmpp3SubmitReqPkt to bytes stream for client side.
+// Before calling Pack, you should initialize a Cmpp3SubmitReqPkt variable
+// with correct field value.
 func (p *Cmpp3SubmitReqPkt) Pack(seqId uint32) ([]byte, error) {
 	var pktLen = uint32(CMPP_HEADER_LEN + 129 + p.DestUsrTl*32 + 1 + 1 + p.MsgLength + 20)
 
@@ -281,6 +296,9 @@ func (p *Cmpp3SubmitReqPkt) Pack(seqId uint32) ([]byte, error) {
 	return w.Bytes()
 }
 
+// Unpack unpack the binary byte stream to a Cmpp3SubmitReqPkt variable.
+// Usually it is used in server side. After unpack, you will get all value of fields in
+// Cmpp3SubmitReqPkt struct.
 func (p *Cmpp3SubmitReqPkt) Unpack(data []byte) error {
 	var r = newPacketReader(data)
 
@@ -348,6 +366,9 @@ func (p *Cmpp3SubmitReqPkt) Unpack(data []byte) error {
 	return r.Error()
 }
 
+// Pack packs the Cmpp3SubmitRspPkt to bytes stream for Server side.
+// Before calling Pack, you should initialize a Cmpp3SubmitRspPkt variable
+// with correct field value.
 func (p *Cmpp3SubmitRspPkt) Pack(seqId uint32) ([]byte, error) {
 	var pktLen = uint32(CMPP_HEADER_LEN + 8 + 4)
 
@@ -366,6 +387,9 @@ func (p *Cmpp3SubmitRspPkt) Pack(seqId uint32) ([]byte, error) {
 	return w.Bytes()
 }
 
+// Unpack unpack the binary byte stream to a Cmpp3SubmitRspPkt variable.
+// Usually it is used in client side. After unpack, you will get all value of fields in
+// Cmpp3SubmitRspPkt struct.
 func (p *Cmpp3SubmitRspPkt) Unpack(data []byte) error {
 	var r = newPacketReader(data)
 
