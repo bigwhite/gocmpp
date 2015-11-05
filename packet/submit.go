@@ -183,12 +183,10 @@ func (p *Cmpp2SubmitReqPkt) Unpack(data []byte) error {
 	feeCode := r.ReadCString(6)
 	p.FeeCode = string(feeCode)
 
-	validTime := make([]byte, 17)
-	r.ReadBytes(validTime)
+	validTime := r.ReadCString(17)
 	p.ValidTime = string(validTime)
 
-	atTime := make([]byte, 17)
-	r.ReadBytes(atTime)
+	atTime := r.ReadCString(17)
 	p.AtTime = string(atTime)
 
 	srcId := r.ReadCString(21)
@@ -198,7 +196,7 @@ func (p *Cmpp2SubmitReqPkt) Unpack(data []byte) error {
 
 	for i := 0; i < int(p.DestUsrTl); i++ {
 		destTerminalId := r.ReadCString(21)
-		p.DestTerminalId[i] = string(destTerminalId)
+		p.DestTerminalId = append(p.DestTerminalId, string(destTerminalId))
 	}
 
 	p.MsgLength = r.ReadByte()
@@ -335,12 +333,10 @@ func (p *Cmpp3SubmitReqPkt) Unpack(data []byte) error {
 	feeCode := r.ReadCString(6)
 	p.FeeCode = string(feeCode)
 
-	validTime := make([]byte, 17)
-	r.ReadBytes(validTime)
+	validTime := r.ReadCString(17)
 	p.ValidTime = string(validTime)
 
-	atTime := make([]byte, 17)
-	r.ReadBytes(atTime)
+	atTime := r.ReadCString(17)
 	p.AtTime = string(atTime)
 
 	srcId := r.ReadCString(21)
@@ -350,7 +346,7 @@ func (p *Cmpp3SubmitReqPkt) Unpack(data []byte) error {
 
 	for i := 0; i < int(p.DestUsrTl); i++ {
 		destTerminalId := r.ReadCString(32)
-		p.DestTerminalId[i] = string(destTerminalId)
+		p.DestTerminalId = append(p.DestTerminalId, string(destTerminalId))
 	}
 
 	p.DestTerminalType = r.ReadByte()
