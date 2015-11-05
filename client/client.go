@@ -19,7 +19,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/bigwhite/gocmpp/packet"
+	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
 var ErrNotCompleted = errors.New("data not being handled completed")
@@ -231,6 +231,11 @@ func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
 		} else {
 			p = &cmpppacket.Cmpp2FwdRspPkt{}
 		}
+	case cmpppacket.CMPP_ACTIVE_TEST:
+		p = &cmpppacket.CmppActiveTestReqPkt{}
+	case cmpppacket.CMPP_ACTIVE_TEST_RESP:
+		p = &cmpppacket.CmppActiveTestRspPkt{}
+
 	default:
 		p = nil
 		return nil, cmpppacket.ErrCommandIdNotSupported
