@@ -13,7 +13,10 @@
 
 package cmpppacket
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"errors"
+)
 
 // Packet length const for cmpp submit request and response packets.
 const (
@@ -23,6 +26,37 @@ const (
 	Cmpp3SubmitReqPktMaxLen uint32 = 12 + 3479  //3491d, 0xda3
 	Cmpp3SubmitRspPktLen    uint32 = 12 + 8 + 4 //24d, 0x18
 )
+
+// Errors for result in submit resp.
+var ErrSubmitInvalidStruct = errors.New("submit response status: invalid protocol structure")
+var ErrSubmitInvalidCommandId = errors.New("submit response status: invalid command id")
+var ErrSubmitInvalidSequence = errors.New("submit response status: invalid message sequence")
+var ErrSubmitInvalidMsgLength = errors.New("submit response status: invalid message length")
+var ErrSubmitInvalidFeeCode = errors.New("submit response status: invalid fee code")
+var ErrSubmitExceedMaxMsgLength = errors.New("submit response status: exceed max message length")
+var ErrSubmitInvalidServiceId = errors.New("submit response status: invalid service id")
+var ErrSubmitNotPassFlowControl = errors.New("submit response status: not pass the flow control")
+var ErrSubmitNotServeFeeTerminalId = errors.New("submit response status: feeTerminalId is not served")
+var ErrSubmitInvalidSrcId = errors.New("submit response status: Invalid srcId")
+var ErrSubmitInvalidMsgSrc = errors.New("submit response status: Invalid msgSrc")
+var ErrSubmitInvalidFeeTerminalId = errors.New("submit response status: Invalid feeTerminalId")
+var ErrSubmitInvalidDestTerminalId = errors.New("submit response status: Invalid destTerminalId")
+
+var SubmitRspResultErrMap = map[uint8]error{
+	1:  ErrSubmitInvalidStruct,
+	2:  ErrSubmitInvalidCommandId,
+	3:  ErrSubmitInvalidSequence,
+	4:  ErrSubmitInvalidMsgLength,
+	5:  ErrSubmitInvalidFeeCode,
+	6:  ErrSubmitExceedMaxMsgLength,
+	7:  ErrSubmitInvalidServiceId,
+	8:  ErrSubmitNotPassFlowControl,
+	9:  ErrSubmitNotServeFeeTerminalId,
+	10: ErrSubmitInvalidSrcId,
+	11: ErrSubmitInvalidMsgSrc,
+	12: ErrSubmitInvalidFeeTerminalId,
+	13: ErrSubmitInvalidDestTerminalId,
+}
 
 type Cmpp2SubmitReqPkt struct {
 	MsgId              uint64
