@@ -68,7 +68,7 @@ type Cmpp3SubmitReqPkt struct {
 	ServiceId          string
 	FeeUserType        uint8
 	FeeTerminalId      string
-	FeeTerninalType    uint8
+	FeeTerminalType    uint8
 	TpPid              uint8
 	TpUdhi             uint8
 	MsgFmt             uint8
@@ -271,7 +271,7 @@ func (p *Cmpp3SubmitReqPkt) Pack(seqId uint32) ([]byte, error) {
 	w.WriteFixedSizeString(p.ServiceId, 10)
 	w.WriteByte(p.FeeUserType)
 	w.WriteFixedSizeString(p.FeeTerminalId, 32)
-	w.WriteByte(p.FeeTerninalType)
+	w.WriteByte(p.FeeTerminalType)
 	w.WriteByte(p.TpPid)
 	w.WriteByte(p.TpUdhi)
 	w.WriteByte(p.MsgFmt)
@@ -318,7 +318,7 @@ func (p *Cmpp3SubmitReqPkt) Unpack(data []byte) error {
 	feeTerminalId := r.ReadCString(32)
 	p.FeeTerminalId = string(feeTerminalId)
 
-	p.FeeTerninalType = r.ReadByte()
+	p.FeeTerminalType = r.ReadByte()
 	p.TpPid = r.ReadByte()
 	p.TpUdhi = r.ReadByte()
 	p.MsgFmt = r.ReadByte()
