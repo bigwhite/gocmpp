@@ -127,7 +127,7 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 		status = uint8(rsp.Status)
 	}
 
-	if ok {
+	if !ok {
 		return ErrRespNotMatch
 	}
 
