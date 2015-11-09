@@ -135,7 +135,7 @@ type Cmpp3SubmitRspPkt struct {
 // Before calling Pack, you should initialize a Cmpp2SubmitReqPkt variable
 // with correct field value.
 func (p *Cmpp2SubmitReqPkt) Pack(seqId uint32) ([]byte, error) {
-	var pktLen = uint32(CMPP_HEADER_LEN + 117 + p.DestUsrTl*21 + 1 + p.MsgLength + 8)
+	var pktLen uint32 = CMPP_HEADER_LEN + 117 + uint32(p.DestUsrTl)*21 + 1 + uint32(p.MsgLength) + 8
 
 	var w = newPacketWriter(pktLen)
 
@@ -246,7 +246,7 @@ func (p *Cmpp2SubmitReqPkt) Unpack(data []byte) error {
 // Before calling Pack, you should initialize a Cmpp2SubmitRspPkt variable
 // with correct field value.
 func (p *Cmpp2SubmitRspPkt) Pack(seqId uint32) ([]byte, error) {
-	var pktLen = uint32(CMPP_HEADER_LEN + 8 + 1)
+	var pktLen uint32 = CMPP_HEADER_LEN + 8 + 1
 
 	var w = newPacketWriter(pktLen)
 
@@ -282,7 +282,7 @@ func (p *Cmpp2SubmitRspPkt) Unpack(data []byte) error {
 // Before calling Pack, you should initialize a Cmpp3SubmitReqPkt variable
 // with correct field value.
 func (p *Cmpp3SubmitReqPkt) Pack(seqId uint32) ([]byte, error) {
-	var pktLen = uint32(CMPP_HEADER_LEN + 129 + p.DestUsrTl*32 + 1 + 1 + p.MsgLength + 20)
+	var pktLen uint32 = CMPP_HEADER_LEN + 129 + uint32(p.DestUsrTl)*32 + 1 + 1 + uint32(p.MsgLength) + 20
 
 	var w = newPacketWriter(pktLen)
 
@@ -400,7 +400,7 @@ func (p *Cmpp3SubmitReqPkt) Unpack(data []byte) error {
 // Before calling Pack, you should initialize a Cmpp3SubmitRspPkt variable
 // with correct field value.
 func (p *Cmpp3SubmitRspPkt) Pack(seqId uint32) ([]byte, error) {
-	var pktLen = uint32(CMPP_HEADER_LEN + 8 + 4)
+	var pktLen uint32 = CMPP_HEADER_LEN + 8 + 4
 
 	var w = newPacketWriter(pktLen)
 

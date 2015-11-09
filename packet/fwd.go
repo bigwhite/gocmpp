@@ -143,7 +143,7 @@ type Cmpp3FwdRspPkt struct {
 // Before calling Pack, you should initialize a Cmpp2FwdReqPkt variable
 // with correct field value.
 func (p *Cmpp2FwdReqPkt) Pack(seqId uint32) ([]byte, error) {
-	var pktLen = uint32(CMPP_HEADER_LEN + 131 + p.DestUsrTl*21 + 1 + p.MsgLength + 8)
+	var pktLen uint32 = CMPP_HEADER_LEN + 131 + uint32(p.DestUsrTl)*21 + 1 + uint32(p.MsgLength) + 8
 	var w = newPacketWriter(pktLen)
 
 	// Pack header
@@ -296,7 +296,7 @@ func (p *Cmpp2FwdRspPkt) Unpack(data []byte) error {
 // Before calling Pack, you should initialize a Cmpp3FwdReqPkt variable
 // with correct field value.
 func (p *Cmpp3FwdReqPkt) Pack(seqId uint32) ([]byte, error) {
-	var pktLen = uint32(CMPP_HEADER_LEN + 198 + p.DestUsrTl*21 + 32 + 1 + 1 + p.MsgLength + 20)
+	var pktLen uint32 = CMPP_HEADER_LEN + 198 + uint32(p.DestUsrTl)*21 + 32 + 1 + 1 + uint32(p.MsgLength) + 20
 
 	var w = newPacketWriter(pktLen)
 
