@@ -248,7 +248,7 @@ func (p *Cmpp3DeliverReqPkt) Unpack(data []byte) error {
 	p.TpUdhi = r.ReadByte()
 	p.MsgFmt = r.ReadByte()
 
-	srcTerminalId := r.ReadCString(21)
+	srcTerminalId := r.ReadCString(32)
 	p.SrcTerminalId = string(srcTerminalId)
 	p.SrcTerminalType = r.ReadByte()
 
