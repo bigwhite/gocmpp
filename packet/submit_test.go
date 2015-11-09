@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bigwhite/gocmpp/packet"
+	cmpppacket "github.com/bigwhite/gocmpp/packet"
 	"github.com/bigwhite/gocmpp/utils"
 )
 

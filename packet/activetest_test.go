@@ -16,7 +16,7 @@ package cmpppacket_test
 import (
 	"testing"
 
-	"github.com/bigwhite/gocmpp/packet"
+	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
 func TestCmppActiveTestReqPktPack(t *testing.T) {

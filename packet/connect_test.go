@@ -16,24 +16,24 @@ package cmpppacket_test
 import (
 	"testing"
 
-	"github.com/bigwhite/gocmpp/packet"
+	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
 var (
-	sourceAddr        = "900001"
-	secret            = "888888"
-	timestamp  uint32 = 1021080510
-	version           = cmpppacket.V21
-	version1          = cmpppacket.V30
-	seqId      uint32 = 0x17
+	connSourceAddr        = "900001"
+	connSecret            = "888888"
+	connTimestamp  uint32 = 1021080510
+	connVersion           = cmpppacket.V21
+	connVersion1          = cmpppacket.V30
+	seqId          uint32 = 0x17
 )
 
 func TestCmppConnReqPktPack(t *testing.T) {
 	p := &cmpppacket.CmppConnReqPkt{
-		SrcAddr:   sourceAddr,
-		Version:   version,
-		Secret:    secret,
-		Timestamp: timestamp, //usually , we don't need to assign timestamp
+		SrcAddr:   connSourceAddr,
+		Version:   connVersion,
+		Secret:    connSecret,
+		Timestamp: connTimestamp, //usually , we don't need to assign timestamp
 	}
 
 	data, err := p.Pack(seqId)
@@ -90,15 +90,15 @@ func TestCmppConnReqPktUnpack(t *testing.T) {
 	if p.SeqId != seqId {
 		t.Fatalf("After unpack, seqId in packet is %x, not equal to the expected value: %x\n", p.SeqId, seqId)
 	}
-	if p.SrcAddr != sourceAddr {
-		t.Fatalf("After unpack, SrcAddr in packet is %s, not equal to the expected value: %s\n", p.SrcAddr, sourceAddr)
+	if p.SrcAddr != connSourceAddr {
+		t.Fatalf("After unpack, SrcAddr in packet is %s, not equal to the expected value: %s\n", p.SrcAddr, connSourceAddr)
 	}
-	if p.Version != version {
+	if p.Version != connVersion {
 		t.Fatalf("After unpack, Version in packet is %x, not equal to the expected value: %x\n",
-			p.Version, version)
+			p.Version, connVersion)
 	}
-	if p.Timestamp != timestamp {
-		t.Fatalf("After unpack, Timestamp in packet is %d, not equal to the expected value: %d\n", p.Timestamp, timestamp)
+	if p.Timestamp != connTimestamp {
+		t.Fatalf("After unpack, Timestamp in packet is %d, not equal to the expected value: %d\n", p.Timestamp, connTimestamp)
 	}
 
 	authSrcExpected := []byte{
@@ -123,8 +123,8 @@ func TestCmpp2ConnRspPktPack(t *testing.T) {
 
 	p := &cmpppacket.Cmpp2ConnRspPkt{
 		Status:  0x0,
-		Version: version,
-		Secret:  secret,
+		Version: connVersion,
+		Secret:  connSecret,
 		AuthSrc: string(authSrc),
 	}
 
@@ -174,9 +174,9 @@ func TestCmpp2ConnRspUnpack(t *testing.T) {
 	if p.SeqId != seqId {
 		t.Fatalf("After unpack, seqId in packet is %x, not equal to the expected value: %x\n", p.SeqId, seqId)
 	}
-	if p.Version != version {
+	if p.Version != connVersion {
 		t.Fatalf("After unpack, Version in packet is %x, not equal to the expected value: %x\n",
-			p.Version, version)
+			p.Version, connVersion)
 	}
 	if p.Status != 0x0 {
 		t.Fatalf("After unpack, Status in packet is %d, not equal to the expected value: %d\n", p.Status, 0x0)
@@ -204,8 +204,8 @@ func TestCmpp3ConnRspPktPack(t *testing.T) {
 
 	p := &cmpppacket.Cmpp3ConnRspPkt{
 		Status:  0x0,
-		Version: version1,
-		Secret:  secret,
+		Version: connVersion1,
+		Secret:  connSecret,
 		AuthSrc: string(authSrc),
 	}
 
@@ -255,9 +255,9 @@ func TestCmpp3ConnRspUnpack(t *testing.T) {
 	if p.SeqId != seqId {
 		t.Fatalf("After unpack, seqId in packet is %x, not equal to the expected value: %x\n", p.SeqId, seqId)
 	}
-	if p.Version != version1 {
+	if p.Version != connVersion1 {
 		t.Fatalf("After unpack, Version in packet is %x, not equal to the expected value: %x\n",
-			p.Version, version)
+			p.Version, connVersion)
 	}
 	if p.Status != 0x0 {
 		t.Fatalf("After unpack, Status in packet is %d, not equal to the expected value: %d\n", p.Status, 0x0)
