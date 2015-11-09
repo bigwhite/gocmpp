@@ -76,6 +76,7 @@ type Cmpp2FwdReqPkt struct {
 	DestId             []string
 	MsgLength          uint8
 	MsgContent         string
+	Reserve            string
 
 	// session info
 	SeqId uint32
@@ -185,7 +186,7 @@ func (p *Cmpp2FwdReqPkt) Pack(seqId uint32) ([]byte, error) {
 	}
 	w.WriteByte(p.MsgLength)
 	w.WriteString(p.MsgContent)
-	w.WriteFixedSizeString("", 8) //Reserved
+	w.WriteFixedSizeString(p.Reserve, 8)
 
 	return w.Bytes()
 }
@@ -250,6 +251,9 @@ func (p *Cmpp2FwdReqPkt) Unpack(data []byte) error {
 	msgContent := make([]byte, p.MsgLength)
 	r.ReadBytes(msgContent)
 	p.MsgContent = string(msgContent)
+
+	reserve := r.ReadCString(8)
+	p.Reserve = string(reserve)
 
 	return r.Error()
 }

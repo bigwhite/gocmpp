@@ -81,5 +81,6 @@ func (p *CmppActiveTestRspPkt) Unpack(data []byte) error {
 
 	// Sequence Id
 	r.ReadInt(binary.BigEndian, &p.SeqId)
+	p.Reserved = r.ReadByte()
 	return r.Error()
 }
