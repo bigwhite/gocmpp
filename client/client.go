@@ -207,6 +207,10 @@ func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
 		} else {
 			p = &cmpppacket.Cmpp2ConnRspPkt{}
 		}
+	case cmpppacket.CMPP_TERMINATE:
+		p = &cmpppacket.CmppTerminateReqPkt{}
+	case cmpppacket.CMPP_TERMINATE_RESP:
+		p = &cmpppacket.CmppTerminateRspPkt{}
 	case cmpppacket.CMPP_SUBMIT:
 		if cli.typ == cmpppacket.V30 {
 			p = &cmpppacket.Cmpp3SubmitReqPkt{}
@@ -218,6 +222,18 @@ func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
 			p = &cmpppacket.Cmpp3SubmitRspPkt{}
 		} else {
 			p = &cmpppacket.Cmpp2SubmitRspPkt{}
+		}
+	case cmpppacket.CMPP_DELIVER:
+		if cli.typ == cmpppacket.V30 {
+			p = &cmpppacket.Cmpp3DeliverReqPkt{}
+		} else {
+			p = &cmpppacket.Cmpp2DeliverReqPkt{}
+		}
+	case cmpppacket.CMPP_DELIVER_RESP:
+		if cli.typ == cmpppacket.V30 {
+			p = &cmpppacket.Cmpp3DeliverRspPkt{}
+		} else {
+			p = &cmpppacket.Cmpp2DeliverRspPkt{}
 		}
 	case cmpppacket.CMPP_FWD:
 		if cli.typ == cmpppacket.V30 {
