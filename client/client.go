@@ -105,7 +105,7 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 		Version: cli.typ,
 	}
 
-	err = cli.SendPacket(req)
+	err = cli.SendReqPkt(req)
 	if err != nil {
 		return err
 	}
@@ -138,9 +138,9 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 	return nil
 }
 
-// SendPacket pack the cmpp packet structure and send it to the other peer.
-func (cli *Client) SendPacket(packet cmpppacket.Packer) error {
-	data, err := packet.Pack(<-cli.seqId)
+// sendPkt pack the cmpp packet structure and send it to the other peer.
+func (cli *Client) sendPkt(packet cmpppacket.Packer, seqId uint32) error {
+	data, err := packet.Pack(seqId)
 	if err != nil {
 		return err
 	}
@@ -154,6 +154,16 @@ func (cli *Client) SendPacket(packet cmpppacket.Packer) error {
 		return ErrNotCompleted
 	}
 	return nil
+}
+
+// SendReqPkt pack the cmpp request packet structure and send it to the other peer.
+func (cli *Client) SendReqPkt(packet cmpppacket.Packer) error {
+	return cli.sendPkt(packet, <-cli.seqId)
+}
+
+// SendRspPkt pack the cmpp response packet structure and send it to the other peer.
+func (cli *Client) SendRspPkt(packet cmpppacket.Packer, seqId uint32) error {
+	return cli.sendPkt(packet, seqId)
 }
 
 // RecvAndUnpackPkt receives cmpp byte stream, and unpack it to some cmpp packet structure.
