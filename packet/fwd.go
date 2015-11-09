@@ -73,7 +73,7 @@ type Cmpp2FwdReqPkt struct {
 	AtTime             string
 	SrcId              string
 	DestUsrTl          uint8
-	DestTerminalId     []string
+	DestId             []string
 	MsgLength          uint8
 	MsgContent         string
 
@@ -180,7 +180,7 @@ func (p *Cmpp2FwdReqPkt) Pack(seqId uint32) ([]byte, error) {
 	w.WriteFixedSizeString(p.AtTime, 17)
 	w.WriteFixedSizeString(p.SrcId, 21)
 	w.WriteByte(p.DestUsrTl)
-	for _, d := range p.DestTerminalId {
+	for _, d := range p.DestId {
 		w.WriteFixedSizeString(d, 21)
 	}
 	w.WriteByte(p.MsgLength)
@@ -241,8 +241,8 @@ func (p *Cmpp2FwdReqPkt) Unpack(data []byte) error {
 
 	p.DestUsrTl = r.ReadByte()
 	for i := 0; i < int(p.DestUsrTl); i++ {
-		destTerminalId := r.ReadCString(21)
-		p.DestTerminalId = append(p.DestTerminalId, string(destTerminalId))
+		destId := r.ReadCString(21)
+		p.DestId = append(p.DestId, string(destId))
 	}
 
 	p.MsgLength = r.ReadByte()
@@ -415,7 +415,7 @@ func (p *Cmpp3FwdReqPkt) Unpack(data []byte) error {
 
 	p.DestUsrTl = r.ReadByte()
 	for i := 0; i < int(p.DestUsrTl); i++ {
-		destId := r.ReadCString(32)
+		destId := r.ReadCString(21)
 		p.DestId = append(p.DestId, string(destId))
 	}
 	destPseudo := r.ReadCString(32)
