@@ -25,8 +25,8 @@ type CmppReceiptPkt struct {
 	Stat           string
 	SubmitTime     string // YYMMDDHHMM
 	DoneTime       string // YYMMDDHHMM
-	DestTerminalID string
-	SmscSequence   uint64
+	DestTerminalId string
+	SmscSequence   uint32
 }
 
 // Pack packs the CmppReceiptPkt to bytes stream for client side.
@@ -36,10 +36,10 @@ func (p *CmppReceiptPkt) Pack() ([]byte, error) {
 	var w = newPacketWriter(pktLen)
 
 	w.WriteInt(binary.BigEndian, p.MsgId)
-	w.WriteInt(binary.BigEndian, p.Stat)
+	w.WriteFixedSizeString(p.Stat, 7)
 	w.WriteFixedSizeString(p.SubmitTime, 10)
 	w.WriteFixedSizeString(p.DoneTime, 10)
-	w.WriteFixedSizeString(p.DestTerminalID, 21)
+	w.WriteFixedSizeString(p.DestTerminalId, 21)
 	w.WriteInt(binary.BigEndian, p.SmscSequence)
 
 	return w.Bytes()
@@ -62,8 +62,8 @@ func (p *CmppReceiptPkt) Unpack(data []byte) error {
 	doneTime := r.ReadCString(10)
 	p.DoneTime = string(doneTime)
 
-	destTerminalID := r.ReadCString(21)
-	p.DestTerminalID = string(destTerminalID)
+	destTerminalId := r.ReadCString(21)
+	p.DestTerminalId = string(destTerminalId)
 
 	r.ReadInt(binary.BigEndian, &p.SmscSequence)
 	return r.Error()
