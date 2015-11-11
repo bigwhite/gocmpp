@@ -2,7 +2,7 @@
 [![GoDoc](http://img.shields.io/badge/GoDoc-Reference-blue.svg)](https://godoc.org/github.com/bigwhite/gocmpp)
 
 # gocmpp
-An implementation of China Mobile Peer to Peer protocol in golang for both client and server sides.
+An implementation of China Mobile Peer to Peer(cmpp) protocol in golang for both client and server sides.
 
 The protocol versions below are covered：
 * [cmpp2.1](http://pan.baidu.com/s/13E0Q6)
