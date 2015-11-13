@@ -20,17 +20,6 @@ import (
 	"testing"
 )
 
-func TestTypeString(t *testing.T) {
-	a, b, c := V30, V21, V20
-	if a != 0x30 || b != 0x21 || c != 0x20 {
-		t.Fatal("The value of var of Type is incorrect")
-	}
-
-	if a.String() != "cmpp30" || b.String() != "cmpp21" || c.String() != "cmpp20" {
-		t.Fatal("The string presentation of var of Type is incorrect")
-	}
-}
-
 func TestCommandIdString(t *testing.T) {
 	id1, id2 := CMPP_CONNECT, CMPP_CONNECT_RESP
 

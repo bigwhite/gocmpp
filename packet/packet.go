@@ -24,25 +24,6 @@ import (
 type Type int8
 
 const (
-	V30 Type = 0x30
-	V21 Type = 0x21
-	V20 Type = 0x20
-)
-
-func (t Type) String() string {
-	switch {
-	case t == V30:
-		return "cmpp30"
-	case t == V21:
-		return "cmpp21"
-	case t == V20:
-		return "cmpp20"
-	default:
-		return "unknown"
-	}
-}
-
-const (
 	CMPP_HEADER_LEN  uint32 = 12
 	CMPP2_PACKET_MAX uint32 = 2477
 	CMPP2_PACKET_MIN uint32 = 12

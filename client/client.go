@@ -14,57 +14,30 @@
 package cmppclient
 
 import (
-	"encoding/binary"
 	"errors"
-	"io"
 	"net"
+	"time"
 
+	cmppconn "github.com/bigwhite/gocmpp/conn"
 	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
 var ErrNotCompleted = errors.New("data not being handled completed")
 var ErrRespNotMatch = errors.New("the response is not matched with the request")
+var ErrConnClosed = errors.New("the conn is closed")
 
 // Client stands for one client-side instance, just like a session.
 // It may connect to the server, send & recv cmpp packets and terminate the connection.
 type Client struct {
-	t         uint8 // packet response timeout, default: 60s
-	keepAlive bool  // indicates whether current session is a keepalive one, default: true
-	conn      net.Conn
-	typ       cmpppacket.Type
-	seqId     <-chan uint32
-	done      chan<- struct{}
+	conn *cmppconn.Conn
+	typ  cmppconn.Type
 }
 
 // New establishes a new cmpp client.
-func New(typ cmpppacket.Type) *Client {
-	seqId, done := newSeqIdGenerator()
+func New(typ cmppconn.Type) *Client {
 	return &Client{
-		t:         60,
-		keepAlive: true,
-		typ:       typ,
-		seqId:     seqId,
-		done:      done,
+		typ: typ,
 	}
-}
-
-func newSeqIdGenerator() (<-chan uint32, chan<- struct{}) {
-	out := make(chan uint32)
-	done := make(chan struct{})
-
-	go func() {
-		var i uint32
-		for {
-			select {
-			case out <- i:
-				i++
-			case <-done:
-				close(out)
-				return
-			}
-		}
-	}()
-	return out, done
 }
 
 func (cli *Client) Free() {
@@ -72,37 +45,30 @@ func (cli *Client) Free() {
 		if cli.conn != nil {
 			cli.conn.Close()
 		}
-		close(cli.done)
 		cli = nil
 	}
 }
 
-// SetT sets the heartbeat response timeout for the client.
-// You should call this method before session established.
-func (cli *Client) SetT(t uint8) {
-	cli.t = t
-}
-
-// SetKeepAlive sets the connection attribute for the client.
-// You should call this method before session established.
-func (cli *Client) SetKeepAlive(keepAlive bool) {
-	cli.keepAlive = keepAlive
-}
-
 // Connect connect to the cmpp server in block mode.
 // It sends login packet, receive and parse connect response packet.
-func (cli *Client) Connect(servAddr, user, password string) error {
+func (cli *Client) Connect(servAddr, user, password string, timeout time.Duration) error {
 	var err error
-	cli.conn, err = net.Dial("tcp", servAddr)
+	conn, err := net.DialTimeout("tcp", servAddr, timeout)
 	if err != nil {
 		return err
 	}
+	cli.conn = cmppconn.New(conn, cli.typ)
+	defer func() {
+		if err != nil {
+			cli.conn.Close()
+		}
+	}()
 
 	// Login to the server.
 	req := &cmpppacket.CmppConnReqPkt{
 		SrcAddr: user,
 		Secret:  password,
-		Version: cli.typ,
+		Version: cmpppacket.Type(cli.typ),
 	}
 
 	err = cli.SendReqPkt(req)
@@ -110,14 +76,14 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 		return err
 	}
 
-	p, err := cli.RecvAndUnpackPkt()
+	p, err := cli.conn.RecvAndUnpackPkt()
 	if err != nil {
 		return err
 	}
 
 	var ok bool
 	var status uint8
-	if cli.typ == cmpppacket.V20 || cli.typ == cmpppacket.V21 {
+	if cli.typ == cmppconn.V20 || cli.typ == cmppconn.V21 {
 		var rsp *cmpppacket.Cmpp2ConnRspPkt
 		rsp, ok = p.(*cmpppacket.Cmpp2ConnRspPkt)
 		status = rsp.Status
@@ -128,148 +94,39 @@ func (cli *Client) Connect(servAddr, user, password string) error {
 	}
 
 	if !ok {
-		return ErrRespNotMatch
-	}
-
-	if status != 0 {
-		return cmpppacket.ConnRspStatusErrMap[status]
-	}
-
-	return nil
-}
-
-// sendPkt pack the cmpp packet structure and send it to the other peer.
-func (cli *Client) sendPkt(packet cmpppacket.Packer, seqId uint32) error {
-	data, err := packet.Pack(seqId)
-	if err != nil {
+		err = ErrRespNotMatch
 		return err
 	}
 
-	n, err := cli.conn.Write(data)
-	if err != nil {
-		return nil
+	if status != 0 {
+		err = cmpppacket.ConnRspStatusErrMap[status]
+		return err
 	}
 
-	if n != len(data) {
-		return ErrNotCompleted
-	}
+	cli.conn.SetState(cmppconn.CONN_AUTHOK)
 	return nil
 }
 
 // SendReqPkt pack the cmpp request packet structure and send it to the other peer.
 func (cli *Client) SendReqPkt(packet cmpppacket.Packer) error {
-	return cli.sendPkt(packet, <-cli.seqId)
+	if cli.conn == nil {
+		return ErrConnClosed
+	}
+	return cli.conn.SendPkt(packet, <-cli.conn.SeqId)
 }
 
 // SendRspPkt pack the cmpp response packet structure and send it to the other peer.
 func (cli *Client) SendRspPkt(packet cmpppacket.Packer, seqId uint32) error {
-	return cli.sendPkt(packet, seqId)
+	if cli.conn == nil {
+		return ErrConnClosed
+	}
+	return cli.conn.SendPkt(packet, seqId)
 }
 
 // RecvAndUnpackPkt receives cmpp byte stream, and unpack it to some cmpp packet structure.
 func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
-	// Total_Length in packet
-	var totalLen uint32
-	err := binary.Read(cli.conn, binary.BigEndian, &totalLen)
-	if err != nil {
-		return nil, err
+	if cli.conn == nil {
+		return nil, ErrConnClosed
 	}
-
-	if cli.typ == cmpppacket.V30 {
-		if totalLen < cmpppacket.CMPP3_PACKET_MIN || totalLen > cmpppacket.CMPP3_PACKET_MAX {
-			return nil, cmpppacket.ErrTotalLengthInvalid
-		}
-	}
-
-	if cli.typ == cmpppacket.V21 || cli.typ == cmpppacket.V20 {
-		if totalLen < cmpppacket.CMPP2_PACKET_MIN || totalLen > cmpppacket.CMPP2_PACKET_MAX {
-			return nil, cmpppacket.ErrTotalLengthInvalid
-		}
-	}
-
-	// Command_Id
-	var commandId cmpppacket.CommandId
-	err = binary.Read(cli.conn, binary.BigEndian, &commandId)
-	if err != nil {
-		return nil, err
-	}
-
-	if !((commandId > cmpppacket.CMPP_REQUEST_MIN && commandId < cmpppacket.CMPP_REQUEST_MAX) ||
-		(commandId > cmpppacket.CMPP_RESPONSE_MIN && commandId < cmpppacket.CMPP_RESPONSE_MAX)) {
-		return nil, cmpppacket.ErrCommandIdInvalid
-	}
-
-	// The left packet data (start from seqId in header).
-	// todo: may use cli.conn.SetReadDeadline to avoid longtime block
-	var leftData = make([]byte, totalLen-8)
-	_, err = io.ReadFull(cli.conn, leftData)
-	if err != nil {
-		return nil, err
-	}
-
-	var p cmpppacket.Packer
-	switch commandId {
-	case cmpppacket.CMPP_CONNECT:
-		p = &cmpppacket.CmppConnReqPkt{}
-	case cmpppacket.CMPP_CONNECT_RESP:
-		if cli.typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3ConnRspPkt{}
-		} else {
-			p = &cmpppacket.Cmpp2ConnRspPkt{}
-		}
-	case cmpppacket.CMPP_TERMINATE:
-		p = &cmpppacket.CmppTerminateReqPkt{}
-	case cmpppacket.CMPP_TERMINATE_RESP:
-		p = &cmpppacket.CmppTerminateRspPkt{}
-	case cmpppacket.CMPP_SUBMIT:
-		if cli.typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3SubmitReqPkt{}
-		} else {
-			p = &cmpppacket.Cmpp2SubmitReqPkt{}
-		}
-	case cmpppacket.CMPP_SUBMIT_RESP:
-		if cli.typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3SubmitRspPkt{}
-		} else {
-			p = &cmpppacket.Cmpp2SubmitRspPkt{}
-		}
-	case cmpppacket.CMPP_DELIVER:
-		if cli.typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3DeliverReqPkt{}
-		} else {
-			p = &cmpppacket.Cmpp2DeliverReqPkt{}
-		}
-	case cmpppacket.CMPP_DELIVER_RESP:
-		if cli.typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3DeliverRspPkt{}
-		} else {
-			p = &cmpppacket.Cmpp2DeliverRspPkt{}
-		}
-	case cmpppacket.CMPP_FWD:
-		if cli.typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3FwdReqPkt{}
-		} else {
-			p = &cmpppacket.Cmpp2FwdReqPkt{}
-		}
-	case cmpppacket.CMPP_FWD_RESP:
-		if cli.typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3FwdRspPkt{}
-		} else {
-			p = &cmpppacket.Cmpp2FwdRspPkt{}
-		}
-	case cmpppacket.CMPP_ACTIVE_TEST:
-		p = &cmpppacket.CmppActiveTestReqPkt{}
-	case cmpppacket.CMPP_ACTIVE_TEST_RESP:
-		p = &cmpppacket.CmppActiveTestRspPkt{}
-
-	default:
-		p = nil
-		return nil, cmpppacket.ErrCommandIdNotSupported
-	}
-
-	err = p.Unpack(leftData)
-	if err != nil {
-		return nil, err
-	}
-	return p, nil
+	return cli.conn.RecvAndUnpackPkt()
 }
