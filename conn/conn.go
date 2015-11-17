@@ -14,7 +14,6 @@
 package cmppconn
 
 import (
-	"bufio"
 	"encoding/binary"
 	"io"
 	"net"
@@ -54,12 +53,10 @@ const (
 
 type Conn struct {
 	net.Conn
-	State  State
-	Typ    Type
-	Reader *bufio.Reader
-	Writer *bufio.Writer
-	SeqId  <-chan uint32
-	done   chan<- struct{}
+	State State
+	Typ   Type
+	SeqId <-chan uint32
+	done  chan<- struct{}
 }
 
 func newSeqIdGenerator() (<-chan uint32, chan<- struct{}) {
@@ -84,15 +81,13 @@ func newSeqIdGenerator() (<-chan uint32, chan<- struct{}) {
 func New(conn net.Conn, typ Type) *Conn {
 	seqId, done := newSeqIdGenerator()
 	c := &Conn{
-		Conn:   conn,
-		Typ:    typ,
-		State:  CONN_CONNECTED,
-		Reader: bufio.NewReader(conn),
-		Writer: bufio.NewWriter(conn),
-		SeqId:  seqId,
-		done:   done,
+		Conn:  conn,
+		Typ:   typ,
+		State: CONN_CONNECTED,
+		SeqId: seqId,
+		done:  done,
 	}
-	tc := c.Conn.(*net.TCPConn)
+	tc := c.Conn.(*net.TCPConn) // Always tcpconn
 	tc.SetKeepAlive(true)
 	return c
 }
@@ -101,9 +96,6 @@ func (c *Conn) Close() {
 	if c != nil {
 		if c.Typ == CONN_CLOSED {
 			return
-		}
-		if c.Writer != nil {
-			c.Writer.Flush()
 		}
 		close(c.done)
 		c.Conn.Close()
@@ -116,23 +108,6 @@ func (c *Conn) SetState(state State) {
 	c.State = state
 }
 
-func (c *Conn) writeFull(data []byte) error {
-	var written = 0
-	for written < len(data) {
-		n, err := c.Writer.Write(data[written:])
-		if err != nil && err != io.ErrShortWrite {
-			return err
-		}
-		err = c.Writer.Flush()
-		if err != nil {
-			return err
-		}
-		written += n
-	}
-
-	return nil
-}
-
 // SendPkt pack the cmpp packet structure and send it to the other peer.
 func (c *Conn) SendPkt(packet cmpppacket.Packer, seqId uint32) error {
 	data, err := packet.Pack(seqId)
@@ -140,7 +115,7 @@ func (c *Conn) SendPkt(packet cmpppacket.Packer, seqId uint32) error {
 		return err
 	}
 
-	err = c.writeFull(data)
+	_, err = c.Conn.Write(data) //block write
 	if err != nil {
 		return err
 	}
@@ -152,7 +127,7 @@ func (c *Conn) SendPkt(packet cmpppacket.Packer, seqId uint32) error {
 func (c *Conn) RecvAndUnpackPkt() (interface{}, error) {
 	// Total_Length in packet
 	var totalLen uint32
-	err := binary.Read(c.Reader, binary.BigEndian, &totalLen)
+	err := binary.Read(c.Conn, binary.BigEndian, &totalLen)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +146,7 @@ func (c *Conn) RecvAndUnpackPkt() (interface{}, error) {
 
 	// Command_Id
 	var commandId cmpppacket.CommandId
-	err = binary.Read(c.Reader, binary.BigEndian, &commandId)
+	err = binary.Read(c.Conn, binary.BigEndian, &commandId)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +158,7 @@ func (c *Conn) RecvAndUnpackPkt() (interface{}, error) {
 
 	// The left packet data (start from seqId in header).
 	var leftData = make([]byte, totalLen-8)
-	_, err = io.ReadFull(c.Reader, leftData)
+	_, err = io.ReadFull(c.Conn, leftData)
 	if err != nil {
 		return nil, err
 	}
