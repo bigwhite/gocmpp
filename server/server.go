@@ -302,18 +302,18 @@ func (c *conn) serve() {
 	for {
 		r, err := c.readPacket()
 		if err != nil {
-			c.Close()
+			c.close()
 			break
 		}
 
 		_, err = c.server.Handler.ServeCmpp(r, r.Packet)
 		if err != nil {
-			c.Close()
+			c.close()
 			break
 		}
 
 		if err := c.finishPacket(r); err != nil {
-			c.Close()
+			c.close()
 			break
 		}
 	}
