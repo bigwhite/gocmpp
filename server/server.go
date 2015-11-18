@@ -28,6 +28,7 @@ import (
 // errors for cmpp server
 var (
 	ErrEmptyServerAddr = errors.New("cmpp server listen: empty server addr")
+	ErrNoHandlers      = errors.New("cmpp server: no connection handler")
 	ErrUnsupportedPkt  = errors.New("cmpp server read packet: receive a unsupported pkt")
 )
 
@@ -62,7 +63,7 @@ func (f HandlerFunc) ServeCmpp(r *Response, p *Packet) (bool, error) {
 
 type Server struct {
 	Addr    string
-	Handler Handler // handler to invoke, protocolValidator if nil
+	Handler Handler
 
 	// protocol info
 	Typ cmppconn.Type
@@ -406,10 +407,6 @@ func (srv *Server) listenAndServe() error {
 	return srv.Serve(tcpKeepAliveListener{ln.(*net.TCPListener)})
 }
 
-func protocolValidate(r *Response, p *Packet) (bool, error) {
-	return false, nil
-}
-
 // ListenAndServe listens on the TCP network address addr
 // and then calls Serve with handler to handle requests.
 func ListenAndServe(addr string, typ cmppconn.Type, t time.Duration, n int32, handlers ...Handler) error {
@@ -417,20 +414,20 @@ func ListenAndServe(addr string, typ cmppconn.Type, t time.Duration, n int32, ha
 		return ErrEmptyServerAddr
 	}
 
-	var handler Handler
-	if handlers != nil {
-		handler = HandlerFunc(func(r *Response, p *Packet) (bool, error) {
-			for _, h := range handlers {
-				next, err := h.ServeCmpp(r, p)
-				if err != nil || !next {
-					return next, err
-				}
-			}
-			return false, nil
-		})
-	} else {
-		handler = HandlerFunc(protocolValidate)
+	if handlers == nil {
+		return ErrNoHandlers
 	}
+
+	var handler Handler
+	handler = HandlerFunc(func(r *Response, p *Packet) (bool, error) {
+		for _, h := range handlers {
+			next, err := h.ServeCmpp(r, p)
+			if err != nil || !next {
+				return next, err
+			}
+		}
+		return false, nil
+	})
 	server := &Server{Addr: addr, Handler: handler, Typ: typ,
 		T: t, N: n}
 	return server.listenAndServe()
