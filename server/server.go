@@ -52,8 +52,12 @@ type Handler interface {
 // with the appropriate signature, HandlerFunc(f) is a
 // Handler object that calls f.
 //
-// The first return value indicates whether invoke next handler in
+// The first return value indicates whether to invoke next handler in
 // the chain of handlers.
+//
+// The second return value shows the error returned from the handler. And
+// if it is non-nil, server will close the client connection
+// after sending back the corresponding response.
 type HandlerFunc func(*Response, *Packet) (bool, error)
 
 // ServeHTTP calls f(r, p).
@@ -364,7 +368,7 @@ func (c *conn) serve() {
 	for {
 		select {
 		case <-c.exceed:
-			break
+			return // close the connection.
 		default:
 		}
 
@@ -374,11 +378,11 @@ func (c *conn) serve() {
 		}
 
 		_, err = c.server.Handler.ServeCmpp(r, r.Packet)
-		if err != nil {
+		if err1 := c.finishPacket(r); err1 != nil {
 			break
 		}
 
-		if err := c.finishPacket(r); err != nil {
+		if err != nil {
 			break
 		}
 	}
