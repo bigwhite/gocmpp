@@ -29,9 +29,9 @@ func handleLogin(r *cmppserver.Response, p *cmppserver.Packet) (bool, error) {
 	resp.Version = 0x30
 	addr := req.SrcAddr
 	if addr != user {
-		log.Println("handleLogin: cmpp connect error:", cmpppacket.ErrConnInvalidSrcAddr)
-		resp.Status = 2 //invalid source addr
-		return false, cmpppacket.ErrConnInvalidSrcAddr
+		log.Println("handleLogin: cmpp connect error:", cmpppacket.ConnRspStatusErrMap[cmpppacket.ErrnoConnInvalidSrcAddr])
+		resp.Status = uint32(cmpppacket.ErrnoConnInvalidSrcAddr)
+		return false, cmpppacket.ConnRspStatusErrMap[cmpppacket.ErrnoConnInvalidSrcAddr]
 	}
 
 	tm := req.Timestamp
@@ -42,9 +42,9 @@ func handleLogin(r *cmppserver.Response, p *cmppserver.Packet) (bool, error) {
 		nil))
 
 	if req.AuthSrc != string(authSrc[:]) {
-		log.Println("handleLogin: cmpp connect error:", cmpppacket.ErrConnAuthFailed)
-		resp.Status = 3 // auth error
-		return false, cmpppacket.ErrConnAuthFailed
+		log.Println("handleLogin: cmpp connect error:", cmpppacket.ConnRspStatusErrMap[cmpppacket.ErrnoConnAuthFailed])
+		resp.Status = uint32(cmpppacket.ErrnoConnAuthFailed)
+		return false, cmpppacket.ConnRspStatusErrMap[cmpppacket.ErrnoConnAuthFailed]
 	}
 
 	authIsmg := md5.Sum(bytes.Join([][]byte{[]byte{byte(resp.Status)},

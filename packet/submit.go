@@ -28,35 +28,51 @@ const (
 )
 
 // Errors for result in submit resp.
-var ErrSubmitInvalidStruct = errors.New("submit response status: invalid protocol structure")
-var ErrSubmitInvalidCommandId = errors.New("submit response status: invalid command id")
-var ErrSubmitInvalidSequence = errors.New("submit response status: invalid message sequence")
-var ErrSubmitInvalidMsgLength = errors.New("submit response status: invalid message length")
-var ErrSubmitInvalidFeeCode = errors.New("submit response status: invalid fee code")
-var ErrSubmitExceedMaxMsgLength = errors.New("submit response status: exceed max message length")
-var ErrSubmitInvalidServiceId = errors.New("submit response status: invalid service id")
-var ErrSubmitNotPassFlowControl = errors.New("submit response status: not pass the flow control")
-var ErrSubmitNotServeFeeTerminalId = errors.New("submit response status: feeTerminalId is not served")
-var ErrSubmitInvalidSrcId = errors.New("submit response status: Invalid srcId")
-var ErrSubmitInvalidMsgSrc = errors.New("submit response status: Invalid msgSrc")
-var ErrSubmitInvalidFeeTerminalId = errors.New("submit response status: Invalid feeTerminalId")
-var ErrSubmitInvalidDestTerminalId = errors.New("submit response status: Invalid destTerminalId")
+var (
+	ErrnoSubmitInvalidStruct         uint8 = 1
+	ErrnoSubmitInvalidCommandId      uint8 = 2
+	ErrnoSubmitInvalidSequence       uint8 = 3
+	ErrnoSubmitInvalidMsgLength      uint8 = 4
+	ErrnoSubmitInvalidFeeCode        uint8 = 5
+	ErrnoSubmitExceedMaxMsgLength    uint8 = 6
+	ErrnoSubmitInvalidServiceId      uint8 = 7
+	ErrnoSubmitNotPassFlowControl    uint8 = 8
+	ErrnoSubmitNotServeFeeTerminalId uint8 = 9
+	ErrnoSubmitInvalidSrcId          uint8 = 10
+	ErrnoSubmitInvalidMsgSrc         uint8 = 11
+	ErrnoSubmitInvalidFeeTerminalId  uint8 = 12
+	ErrnoSubmitInvalidDestTerminalId uint8 = 13
 
-var SubmitRspResultErrMap = map[uint8]error{
-	1:  ErrSubmitInvalidStruct,
-	2:  ErrSubmitInvalidCommandId,
-	3:  ErrSubmitInvalidSequence,
-	4:  ErrSubmitInvalidMsgLength,
-	5:  ErrSubmitInvalidFeeCode,
-	6:  ErrSubmitExceedMaxMsgLength,
-	7:  ErrSubmitInvalidServiceId,
-	8:  ErrSubmitNotPassFlowControl,
-	9:  ErrSubmitNotServeFeeTerminalId,
-	10: ErrSubmitInvalidSrcId,
-	11: ErrSubmitInvalidMsgSrc,
-	12: ErrSubmitInvalidFeeTerminalId,
-	13: ErrSubmitInvalidDestTerminalId,
-}
+	SubmitRspResultErrMap = map[uint8]error{
+		ErrnoSubmitInvalidStruct:         errSubmitInvalidStruct,
+		ErrnoSubmitInvalidCommandId:      errSubmitInvalidCommandId,
+		ErrnoSubmitInvalidSequence:       errSubmitInvalidSequence,
+		ErrnoSubmitInvalidMsgLength:      errSubmitInvalidMsgLength,
+		ErrnoSubmitInvalidFeeCode:        errSubmitInvalidFeeCode,
+		ErrnoSubmitExceedMaxMsgLength:    errSubmitExceedMaxMsgLength,
+		ErrnoSubmitInvalidServiceId:      errSubmitInvalidServiceId,
+		ErrnoSubmitNotPassFlowControl:    errSubmitNotPassFlowControl,
+		ErrnoSubmitNotServeFeeTerminalId: errSubmitNotServeFeeTerminalId,
+		ErrnoSubmitInvalidSrcId:          errSubmitInvalidSrcId,
+		ErrnoSubmitInvalidMsgSrc:         errSubmitInvalidMsgSrc,
+		ErrnoSubmitInvalidFeeTerminalId:  errSubmitInvalidFeeTerminalId,
+		ErrnoSubmitInvalidDestTerminalId: errSubmitInvalidDestTerminalId,
+	}
+
+	errSubmitInvalidStruct         = errors.New("submit response status: invalid protocol structure")
+	errSubmitInvalidCommandId      = errors.New("submit response status: invalid command id")
+	errSubmitInvalidSequence       = errors.New("submit response status: invalid message sequence")
+	errSubmitInvalidMsgLength      = errors.New("submit response status: invalid message length")
+	errSubmitInvalidFeeCode        = errors.New("submit response status: invalid fee code")
+	errSubmitExceedMaxMsgLength    = errors.New("submit response status: exceed max message length")
+	errSubmitInvalidServiceId      = errors.New("submit response status: invalid service id")
+	errSubmitNotPassFlowControl    = errors.New("submit response status: not pass the flow control")
+	errSubmitNotServeFeeTerminalId = errors.New("submit response status: feeTerminalId is not served")
+	errSubmitInvalidSrcId          = errors.New("submit response status: invalid srcId")
+	errSubmitInvalidMsgSrc         = errors.New("submit response status: invalid msgSrc")
+	errSubmitInvalidFeeTerminalId  = errors.New("submit response status: invalid feeTerminalId")
+	errSubmitInvalidDestTerminalId = errors.New("submit response status: invalid destTerminalId")
+)
 
 type Cmpp2SubmitReqPkt struct {
 	MsgId              uint64

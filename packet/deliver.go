@@ -28,25 +28,37 @@ const (
 )
 
 // Errors for result in deliver resp.
-var ErrDeliverInvalidStruct = errors.New("deliver response status: invalid protocol structure")
-var ErrDeliverInvalidCommandId = errors.New("deliver response status: invalid command id")
-var ErrDeliverInvalidSequence = errors.New("deliver response status: invalid message sequence")
-var ErrDeliverInvalidMsgLength = errors.New("deliver response status: invalid message length")
-var ErrDeliverInvalidFeeCode = errors.New("deliver response status: invalid fee code")
-var ErrDeliverExceedMaxMsgLength = errors.New("deliver response status: exceed max message length")
-var ErrDeliverInvalidServiceId = errors.New("deliver response status: invalid service id")
-var ErrDeliverNotPassFlowControl = errors.New("deliver response status: not pass the flow control")
 
-var DeliverRspResultErrMap = map[uint8]error{
-	1: ErrDeliverInvalidStruct,
-	2: ErrDeliverInvalidCommandId,
-	3: ErrDeliverInvalidSequence,
-	4: ErrDeliverInvalidMsgLength,
-	5: ErrDeliverInvalidFeeCode,
-	6: ErrDeliverExceedMaxMsgLength,
-	7: ErrDeliverInvalidServiceId,
-	8: ErrDeliverNotPassFlowControl,
-}
+var (
+	ErrnoDeliverInvalidStruct      uint8 = 1
+	ErrnoDeliverInvalidCommandId   uint8 = 2
+	ErrnoDeliverInvalidSequence    uint8 = 3
+	ErrnoDeliverInvalidMsgLength   uint8 = 4
+	ErrnoDeliverInvalidFeeCode     uint8 = 5
+	ErrnoDeliverExceedMaxMsgLength uint8 = 6
+	ErrnoDeliverInvalidServiceId   uint8 = 7
+	ErrnoDeliverNotPassFlowControl uint8 = 8
+
+	DeliverRspResultErrMap = map[uint8]error{
+		ErrnoDeliverInvalidStruct:      errDeliverInvalidStruct,
+		ErrnoDeliverInvalidCommandId:   errDeliverInvalidCommandId,
+		ErrnoDeliverInvalidSequence:    errDeliverInvalidSequence,
+		ErrnoDeliverInvalidMsgLength:   errDeliverInvalidMsgLength,
+		ErrnoDeliverInvalidFeeCode:     errDeliverInvalidFeeCode,
+		ErrnoDeliverExceedMaxMsgLength: errDeliverExceedMaxMsgLength,
+		ErrnoDeliverInvalidServiceId:   errDeliverInvalidServiceId,
+		ErrnoDeliverNotPassFlowControl: errDeliverNotPassFlowControl,
+	}
+
+	errDeliverInvalidStruct      = errors.New("deliver response status: invalid protocol structure")
+	errDeliverInvalidCommandId   = errors.New("deliver response status: invalid command id")
+	errDeliverInvalidSequence    = errors.New("deliver response status: invalid message sequence")
+	errDeliverInvalidMsgLength   = errors.New("deliver response status: invalid message length")
+	errDeliverInvalidFeeCode     = errors.New("deliver response status: invalid fee code")
+	errDeliverExceedMaxMsgLength = errors.New("deliver response status: exceed max message length")
+	errDeliverInvalidServiceId   = errors.New("deliver response status: invalid service id")
+	errDeliverNotPassFlowControl = errors.New("deliver response status: not pass the flow control")
+)
 
 type Cmpp2DeliverReqPkt struct {
 	MsgId            uint64

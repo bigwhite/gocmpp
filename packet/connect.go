@@ -32,19 +32,27 @@ const (
 )
 
 // Errors for connect resp status.
-var ErrConnInvalidStruct = errors.New("connect response status: invalid protocol structure")
-var ErrConnInvalidSrcAddr = errors.New("connect response status: invalid source address")
-var ErrConnAuthFailed = errors.New("connect response status: Auth failed")
-var ErrConnVerTooHigh = errors.New("connect response status: protocol version is too high")
-var ErrConnOthers = errors.New("connect response status: other errors")
+var (
+	ErrnoConnInvalidStruct  uint8 = 1
+	ErrnoConnInvalidSrcAddr uint8 = 2
+	ErrnoConnAuthFailed     uint8 = 3
+	ErrnoConnVerTooHigh     uint8 = 4
+	ErrnoConnOthers         uint8 = 5
 
-var ConnRspStatusErrMap = map[uint8]error{
-	1: ErrConnInvalidStruct,
-	2: ErrConnInvalidSrcAddr,
-	3: ErrConnAuthFailed,
-	4: ErrConnVerTooHigh,
-	5: ErrConnOthers,
-}
+	ConnRspStatusErrMap = map[uint8]error{
+		ErrnoConnInvalidStruct:  errConnInvalidStruct,
+		ErrnoConnInvalidSrcAddr: errConnInvalidSrcAddr,
+		ErrnoConnAuthFailed:     errConnAuthFailed,
+		ErrnoConnAuthFailed:     errConnVerTooHigh,
+		ErrnoConnOthers:         errConnOthers,
+	}
+
+	errConnInvalidStruct  = errors.New("connect response status: invalid protocol structure")
+	errConnInvalidSrcAddr = errors.New("connect response status: invalid source address")
+	errConnAuthFailed     = errors.New("connect response status: auth failed")
+	errConnVerTooHigh     = errors.New("connect response status: protocol version is too high")
+	errConnOthers         = errors.New("connect response status: other errors")
+)
 
 func now() (string, uint32) {
 	s := time.Now().Format("0102150405")

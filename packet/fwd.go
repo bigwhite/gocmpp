@@ -28,27 +28,39 @@ const (
 )
 
 // Errors for result in fwd resp.
-var ErrFwdInvalidStruct = errors.New("fwd response status: invalid protocol structure")
-var ErrFwdInvalidCommandId = errors.New("fwd response status: invalid command id")
-var ErrFwdInvalidSequence = errors.New("fwd response status: invalid message sequence")
-var ErrFwdInvalidMsgLength = errors.New("fwd response status: invalid message length")
-var ErrFwdInvalidFeeCode = errors.New("fwd response status: invalid fee code")
-var ErrFwdExceedMaxMsgLength = errors.New("fwd response status: exceed max message length")
-var ErrFwdInvalidServiceId = errors.New("fwd response status: invalid service id")
-var ErrFwdNotPassFlowControl = errors.New("fwd response status: not pass the flow control")
-var ErrFwdNoPrivilege = errors.New("fwd response status: msg has no fwd privilege")
+var (
+	ErrnoFwdInvalidStruct      uint8 = 1
+	ErrnoFwdInvalidCommandId   uint8 = 2
+	ErrnoFwdInvalidSequence    uint8 = 3
+	ErrnoFwdInvalidMsgLength   uint8 = 4
+	ErrnoFwdInvalidFeeCode     uint8 = 5
+	ErrnoFwdExceedMaxMsgLength uint8 = 6
+	ErrnoFwdInvalidServiceId   uint8 = 7
+	ErrnoFwdNotPassFlowControl uint8 = 8
+	ErrnoFwdNoPrivilege        uint8 = 9
 
-var FwdRspResultErrMap = map[uint8]error{
-	1: ErrFwdInvalidStruct,
-	2: ErrFwdInvalidCommandId,
-	3: ErrFwdInvalidSequence,
-	4: ErrFwdInvalidMsgLength,
-	5: ErrFwdInvalidFeeCode,
-	6: ErrFwdExceedMaxMsgLength,
-	7: ErrFwdInvalidServiceId,
-	8: ErrFwdNotPassFlowControl,
-	9: ErrFwdNoPrivilege,
-}
+	FwdRspResultErrMap = map[uint8]error{
+		ErrnoFwdInvalidStruct:      errFwdInvalidStruct,
+		ErrnoFwdInvalidCommandId:   errFwdInvalidCommandId,
+		ErrnoFwdInvalidSequence:    errFwdInvalidSequence,
+		ErrnoFwdInvalidMsgLength:   errFwdInvalidMsgLength,
+		ErrnoFwdInvalidFeeCode:     errFwdInvalidFeeCode,
+		ErrnoFwdExceedMaxMsgLength: errFwdExceedMaxMsgLength,
+		ErrnoFwdInvalidServiceId:   errFwdInvalidServiceId,
+		ErrnoFwdNotPassFlowControl: errFwdNotPassFlowControl,
+		ErrnoFwdNoPrivilege:        errFwdNoPrivilege,
+	}
+
+	errFwdInvalidStruct      = errors.New("fwd response status: invalid protocol structure")
+	errFwdInvalidCommandId   = errors.New("fwd response status: invalid command id")
+	errFwdInvalidSequence    = errors.New("fwd response status: invalid message sequence")
+	errFwdInvalidMsgLength   = errors.New("fwd response status: invalid message length")
+	errFwdInvalidFeeCode     = errors.New("fwd response status: invalid fee code")
+	errFwdExceedMaxMsgLength = errors.New("fwd response status: exceed max message length")
+	errFwdInvalidServiceId   = errors.New("fwd response status: invalid service id")
+	errFwdNotPassFlowControl = errors.New("fwd response status: not pass the flow control")
+	errFwdNoPrivilege        = errors.New("fwd response status: msg has no fwd privilege")
+)
 
 type Cmpp2FwdReqPkt struct {
 	SourceId           string
