@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/bigwhite/gocmpp/client"
-	"github.com/bigwhite/gocmpp/conn"
 	"github.com/bigwhite/gocmpp/packet"
 	"github.com/bigwhite/gocmpp/utils"
 )
@@ -18,7 +17,7 @@ const (
 )
 
 func main() {
-	c := cmppclient.New(cmppconn.V30)
+	c := cmppclient.New(cmpppacket.V30)
 	defer c.Free()
 	err := c.Connect(":8888", user, password, connectTimeout)
 	if err != nil {

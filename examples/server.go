@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/bigwhite/gocmpp/conn"
 	"github.com/bigwhite/gocmpp/packet"
 	cmppserver "github.com/bigwhite/gocmpp/server"
 )
@@ -71,7 +70,7 @@ func handleSubmit(r *cmppserver.Response, p *cmppserver.Packet) (bool, error) {
 
 func main() {
 	err := cmppserver.ListenAndServe(":8888",
-		cmppconn.V30,
+		cmpppacket.V30,
 		5*time.Second,
 		3,
 		cmppserver.HandlerFunc(handleLogin),

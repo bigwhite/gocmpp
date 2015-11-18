@@ -21,27 +21,6 @@ import (
 	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
-type Type int8
-
-const (
-	V30 Type = 0x30
-	V21 Type = 0x21
-	V20 Type = 0x20
-)
-
-func (t Type) String() string {
-	switch {
-	case t == V30:
-		return "cmpp30"
-	case t == V21:
-		return "cmpp21"
-	case t == V20:
-		return "cmpp20"
-	default:
-		return "unknown"
-	}
-}
-
 type State uint8
 
 // Conn States
@@ -54,7 +33,7 @@ const (
 type Conn struct {
 	net.Conn
 	State State
-	Typ   Type
+	Typ   cmpppacket.Type
 	SeqId <-chan uint32
 	done  chan<- struct{}
 }
@@ -78,7 +57,7 @@ func newSeqIdGenerator() (<-chan uint32, chan<- struct{}) {
 	return out, done
 }
 
-func New(conn net.Conn, typ Type) *Conn {
+func New(conn net.Conn, typ cmpppacket.Type) *Conn {
 	seqId, done := newSeqIdGenerator()
 	c := &Conn{
 		Conn:  conn,
@@ -132,13 +111,13 @@ func (c *Conn) RecvAndUnpackPkt() (interface{}, error) {
 		return nil, err
 	}
 
-	if c.Typ == V30 {
+	if c.Typ == cmpppacket.V30 {
 		if totalLen < cmpppacket.CMPP3_PACKET_MIN || totalLen > cmpppacket.CMPP3_PACKET_MAX {
 			return nil, cmpppacket.ErrTotalLengthInvalid
 		}
 	}
 
-	if c.Typ == V21 || c.Typ == V20 {
+	if c.Typ == cmpppacket.V21 || c.Typ == cmpppacket.V20 {
 		if totalLen < cmpppacket.CMPP2_PACKET_MIN || totalLen > cmpppacket.CMPP2_PACKET_MAX {
 			return nil, cmpppacket.ErrTotalLengthInvalid
 		}
@@ -168,7 +147,7 @@ func (c *Conn) RecvAndUnpackPkt() (interface{}, error) {
 	case cmpppacket.CMPP_CONNECT:
 		p = &cmpppacket.CmppConnReqPkt{}
 	case cmpppacket.CMPP_CONNECT_RESP:
-		if c.Typ == V30 {
+		if c.Typ == cmpppacket.V30 {
 			p = &cmpppacket.Cmpp3ConnRspPkt{}
 		} else {
 			p = &cmpppacket.Cmpp2ConnRspPkt{}
@@ -178,37 +157,37 @@ func (c *Conn) RecvAndUnpackPkt() (interface{}, error) {
 	case cmpppacket.CMPP_TERMINATE_RESP:
 		p = &cmpppacket.CmppTerminateRspPkt{}
 	case cmpppacket.CMPP_SUBMIT:
-		if c.Typ == V30 {
+		if c.Typ == cmpppacket.V30 {
 			p = &cmpppacket.Cmpp3SubmitReqPkt{}
 		} else {
 			p = &cmpppacket.Cmpp2SubmitReqPkt{}
 		}
 	case cmpppacket.CMPP_SUBMIT_RESP:
-		if c.Typ == V30 {
+		if c.Typ == cmpppacket.V30 {
 			p = &cmpppacket.Cmpp3SubmitRspPkt{}
 		} else {
 			p = &cmpppacket.Cmpp2SubmitRspPkt{}
 		}
 	case cmpppacket.CMPP_DELIVER:
-		if c.Typ == V30 {
+		if c.Typ == cmpppacket.V30 {
 			p = &cmpppacket.Cmpp3DeliverReqPkt{}
 		} else {
 			p = &cmpppacket.Cmpp2DeliverReqPkt{}
 		}
 	case cmpppacket.CMPP_DELIVER_RESP:
-		if c.Typ == V30 {
+		if c.Typ == cmpppacket.V30 {
 			p = &cmpppacket.Cmpp3DeliverRspPkt{}
 		} else {
 			p = &cmpppacket.Cmpp2DeliverRspPkt{}
 		}
 	case cmpppacket.CMPP_FWD:
-		if c.Typ == V30 {
+		if c.Typ == cmpppacket.V30 {
 			p = &cmpppacket.Cmpp3FwdReqPkt{}
 		} else {
 			p = &cmpppacket.Cmpp2FwdReqPkt{}
 		}
 	case cmpppacket.CMPP_FWD_RESP:
-		if c.Typ == V30 {
+		if c.Typ == cmpppacket.V30 {
 			p = &cmpppacket.Cmpp3FwdRspPkt{}
 		} else {
 			p = &cmpppacket.Cmpp2FwdRspPkt{}

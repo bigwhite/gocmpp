@@ -30,11 +30,11 @@ var ErrConnClosed = errors.New("the conn is closed")
 // It may connect to the server, send & recv cmpp packets and terminate the connection.
 type Client struct {
 	conn *cmppconn.Conn
-	typ  cmppconn.Type
+	typ  cmpppacket.Type
 }
 
 // New establishes a new cmpp client.
-func New(typ cmppconn.Type) *Client {
+func New(typ cmpppacket.Type) *Client {
 	return &Client{
 		typ: typ,
 	}
@@ -68,7 +68,7 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 	req := &cmpppacket.CmppConnReqPkt{
 		SrcAddr: user,
 		Secret:  password,
-		Version: cmpppacket.Type(cli.typ),
+		Version: cli.typ,
 	}
 
 	err = cli.SendReqPkt(req)
@@ -83,7 +83,7 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 
 	var ok bool
 	var status uint8
-	if cli.typ == cmppconn.V20 || cli.typ == cmppconn.V21 {
+	if cli.typ == cmpppacket.V20 || cli.typ == cmpppacket.V21 {
 		var rsp *cmpppacket.Cmpp2ConnRspPkt
 		rsp, ok = p.(*cmpppacket.Cmpp2ConnRspPkt)
 		status = rsp.Status

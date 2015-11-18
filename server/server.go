@@ -70,7 +70,7 @@ type Server struct {
 	Handler Handler
 
 	// protocol info
-	Typ cmppconn.Type
+	Typ cmpppacket.Type
 	T   time.Duration // interval betwwen two active tests
 	N   int32         // continuous send times when no response back
 
@@ -144,7 +144,7 @@ func (c *conn) readPacket() (*Response, error) {
 			Conn:   c.Conn,
 		}
 
-		if typ == cmppconn.V30 {
+		if typ == cmpppacket.V30 {
 			rsp = &Response{
 				Packet: pkt,
 				Packer: &cmpppacket.Cmpp3ConnRspPkt{
@@ -413,7 +413,7 @@ func (srv *Server) listenAndServe() error {
 
 // ListenAndServe listens on the TCP network address addr
 // and then calls Serve with handler to handle requests.
-func ListenAndServe(addr string, typ cmppconn.Type, t time.Duration, n int32, handlers ...Handler) error {
+func ListenAndServe(addr string, typ cmpppacket.Type, t time.Duration, n int32, handlers ...Handler) error {
 	if addr == "" {
 		return ErrEmptyServerAddr
 	}
