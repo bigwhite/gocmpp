@@ -18,13 +18,14 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync/atomic"
 	"time"
 
 	cmppconn "github.com/bigwhite/gocmpp/conn"
 	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
-//
+// errors for cmpp server
 var (
 	ErrEmptyServerAddr = errors.New("cmpp server listen: empty server addr")
 	ErrUnsupportedPkt  = errors.New("cmpp server read packet: receive a unsupported pkt")
@@ -49,6 +50,9 @@ type Handler interface {
 // ordinary functions as Cmpp handlers.  If f is a function
 // with the appropriate signature, HandlerFunc(f) is a
 // Handler object that calls f.
+//
+// The first return value indicates whether invoke next handler in
+// the chain of handlers.
 type HandlerFunc func(*Response, *Packet) (bool, error)
 
 // ServeHTTP calls f(r, p).
@@ -59,7 +63,11 @@ func (f HandlerFunc) ServeCmpp(r *Response, p *Packet) (bool, error) {
 type Server struct {
 	Addr    string
 	Handler Handler // handler to invoke, protocolValidator if nil
-	Typ     cmppconn.Type
+
+	// protocol info
+	Typ cmppconn.Type
+	T   time.Duration // interval betwwen two active tests
+	N   int32         // continuous send times when no response back
 
 	// ErrorLog specifies an optional logger for errors accepting
 	// connections and unexpected behavior from handlers.
@@ -73,6 +81,13 @@ type conn struct {
 	*cmppconn.Conn
 	remoteAddr string  // network address of remote side
 	server     *Server // the Server on which the connection arrived
+
+	// for active test
+	t       time.Duration // interval betwwen two active tests
+	n       int32         // continuous send times when no response back
+	done    chan struct{}
+	exceed  chan struct{}
+	counter int32
 }
 
 // Serve accepts incoming connections on the Listener l, creating a
@@ -280,15 +295,56 @@ func (c *conn) close() {
 	if err != nil {
 		c.server.ErrorLog.Printf("cmpp: close connection error: %v\n", err)
 	}
+
+	close(c.done)
 	c.Conn.Close()
 }
 
 func (c *conn) finishPacket(r *Response) error {
+	if _, ok := r.Packet.Packer.(*cmpppacket.CmppActiveTestRspPkt); ok {
+		atomic.AddInt32(&c.counter, -1)
+		return nil
+	}
+
 	if r.Packer == nil {
+		// For response packet received, it need not
+		// to send anything back.
 		return nil
 	}
 
 	return c.Conn.SendPkt(r.Packer, r.SeqId)
+}
+
+func startActiveTest(c *conn) {
+	exceed, done := make(chan struct{}), make(chan struct{})
+	c.done = done
+	c.exceed = exceed
+
+	go func() {
+		t := time.NewTicker(c.t)
+		defer t.Stop()
+		for {
+			select {
+			case <-done:
+				// once conn close, the goroutine should exit
+				return
+			case <-t.C:
+				// check whether c.counter exceeds
+				if atomic.LoadInt32(&c.counter) >= c.n {
+					exceed <- struct{}{}
+					return
+				}
+				// send a active test packet to peer, increase the active test counter
+				p := &cmpppacket.CmppActiveTestReqPkt{}
+				err := c.Conn.SendPkt(p, <-c.Conn.SeqId)
+				if err != nil {
+					c.server.ErrorLog.Printf("cmpp server: send active test error: %v", err)
+				} else {
+					atomic.AddInt32(&c.counter, 1)
+				}
+			}
+		}
+	}()
 }
 
 // Serve a new connection.
@@ -299,21 +355,29 @@ func (c *conn) serve() {
 		}
 	}()
 
+	defer c.close()
+
+	// start a goroutine for sending active test.
+	startActiveTest(c)
+
 	for {
+		select {
+		case <-c.exceed:
+			break
+		default:
+		}
+
 		r, err := c.readPacket()
 		if err != nil {
-			c.close()
 			break
 		}
 
 		_, err = c.server.Handler.ServeCmpp(r, r.Packet)
 		if err != nil {
-			c.close()
 			break
 		}
 
 		if err := c.finishPacket(r); err != nil {
-			c.close()
 			break
 		}
 	}
@@ -326,6 +390,8 @@ func (srv *Server) newConn(rwc net.Conn) (c *conn, err error) {
 	c.server = srv
 	c.Conn = cmppconn.New(rwc, srv.Typ)
 	c.Conn.SetState(cmppconn.CONN_CONNECTED)
+	c.n = c.server.N
+	c.t = c.server.T
 	return c, nil
 }
 
@@ -346,7 +412,7 @@ func protocolValidate(r *Response, p *Packet) (bool, error) {
 
 // ListenAndServe listens on the TCP network address addr
 // and then calls Serve with handler to handle requests.
-func ListenAndServe(addr string, typ cmppconn.Type, handlers ...Handler) error {
+func ListenAndServe(addr string, typ cmppconn.Type, t time.Duration, n int32, handlers ...Handler) error {
 	if addr == "" {
 		return ErrEmptyServerAddr
 	}
@@ -365,7 +431,8 @@ func ListenAndServe(addr string, typ cmppconn.Type, handlers ...Handler) error {
 	} else {
 		handler = HandlerFunc(protocolValidate)
 	}
-	server := &Server{Addr: addr, Handler: handler, Typ: typ}
+	server := &Server{Addr: addr, Handler: handler, Typ: typ,
+		T: t, N: n}
 	return server.listenAndServe()
 }
 
