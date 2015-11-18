@@ -25,7 +25,7 @@ type State uint8
 
 // Conn States
 const (
-	CONN_CLOSED = iota
+	CONN_CLOSED State = iota
 	CONN_CONNECTED
 	CONN_AUTHOK
 )
@@ -34,6 +34,8 @@ type Conn struct {
 	net.Conn
 	State State
 	Typ   cmpppacket.Type
+
+	// for SeqId generator goroutine
 	SeqId <-chan uint32
 	done  chan<- struct{}
 }
@@ -73,12 +75,12 @@ func New(conn net.Conn, typ cmpppacket.Type) *Conn {
 
 func (c *Conn) Close() {
 	if c != nil {
-		if c.Typ == CONN_CLOSED {
+		if c.State == CONN_CLOSED {
 			return
 		}
 		close(c.done)
 		c.Conn.Close()
-		c.Typ = CONN_CLOSED
+		c.State = CONN_CLOSED
 		c = nil
 	}
 }
