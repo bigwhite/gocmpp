@@ -12,5 +12,7 @@ env:
     - GO15VENDOREXPERIMENT="1"
 
 script: 
-    - go build ./...
-    - go test ./...
+    - go build ./client ./server ./utils ./conn 
+    - go build -o ./examples/server ./examples/server.go
+    - go build -o ./examples/client ./examples/client.go
+    - go test ./client ./server ./utils ./conn
