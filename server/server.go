@@ -16,8 +16,10 @@ package cmppserver
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -44,7 +46,7 @@ type Response struct {
 }
 
 type Handler interface {
-	ServeCmpp(*Response, *Packet) (bool, error)
+	ServeCmpp(*Response, *Packet, *log.Logger) (bool, error)
 }
 
 // The HandlerFunc type is an adapter to allow the use of
@@ -58,11 +60,11 @@ type Handler interface {
 // The second return value shows the error returned from the handler. And
 // if it is non-nil, server will close the client connection
 // after sending back the corresponding response.
-type HandlerFunc func(*Response, *Packet) (bool, error)
+type HandlerFunc func(*Response, *Packet, *log.Logger) (bool, error)
 
 // ServeHTTP calls f(r, p).
-func (f HandlerFunc) ServeCmpp(r *Response, p *Packet) (bool, error) {
-	return f(r, p)
+func (f HandlerFunc) ServeCmpp(r *Response, p *Packet, l *log.Logger) (bool, error) {
+	return f(r, p, l)
 }
 
 type Server struct {
@@ -84,8 +86,7 @@ type Server struct {
 // A conn represents the server side of a Cmpp connection.
 type conn struct {
 	*cmppconn.Conn
-	remoteAddr string  // network address of remote side
-	server     *Server // the Server on which the connection arrived
+	server *Server // the Server on which the connection arrived
 
 	// for active test
 	t       time.Duration // interval betwwen two active tests
@@ -113,7 +114,7 @@ func (srv *Server) Serve(l net.Listener) error {
 				if max := 1 * time.Second; tempDelay > max {
 					tempDelay = max
 				}
-				srv.ErrorLog.Printf("cmpp: Accept error: %v; retrying in %v", e, tempDelay)
+				srv.ErrorLog.Printf("accept error: %v; retrying in %v", e, tempDelay)
 				time.Sleep(tempDelay)
 				continue
 			}
@@ -124,12 +125,15 @@ func (srv *Server) Serve(l net.Listener) error {
 		if err != nil {
 			continue
 		}
+
+		srv.ErrorLog.Printf("accept a connection from %v\n", c.Conn.RemoteAddr())
 		go c.serve()
 	}
 }
 
 func (c *conn) readPacket() (*Response, error) {
-	i, err := c.Conn.RecvAndUnpackPkt()
+	readTimeout := time.Second * 2
+	i, err := c.Conn.RecvAndUnpackPkt(readTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +156,8 @@ func (c *conn) readPacket() (*Response, error) {
 				},
 				SeqId: p.SeqId,
 			}
+			c.server.ErrorLog.Printf("receive a cmpp30 connect request from %v[%d]\n",
+				c.Conn.RemoteAddr(), p.SeqId)
 		} else {
 			rsp = &Response{
 				Packet: pkt,
@@ -160,6 +166,8 @@ func (c *conn) readPacket() (*Response, error) {
 				},
 				SeqId: p.SeqId,
 			}
+			c.server.ErrorLog.Printf("receive a cmpp20 connect request from %v[%d]\n",
+				c.Conn.RemoteAddr(), p.SeqId)
 		}
 
 	case *cmpppacket.Cmpp2SubmitReqPkt:
@@ -175,6 +183,8 @@ func (c *conn) readPacket() (*Response, error) {
 			},
 			SeqId: p.SeqId,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp20 submit request from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 
 	case *cmpppacket.Cmpp3SubmitReqPkt:
 		pkt = &Packet{
@@ -189,6 +199,8 @@ func (c *conn) readPacket() (*Response, error) {
 			},
 			SeqId: p.SeqId,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp30 submit request from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 
 	case *cmpppacket.Cmpp2FwdReqPkt:
 		pkt = &Packet{
@@ -203,6 +215,8 @@ func (c *conn) readPacket() (*Response, error) {
 			},
 			SeqId: p.SeqId,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp20 forward request from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 
 	case *cmpppacket.Cmpp3FwdReqPkt:
 		pkt = &Packet{
@@ -217,6 +231,8 @@ func (c *conn) readPacket() (*Response, error) {
 			},
 			SeqId: p.SeqId,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp30 forward request from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 
 	case *cmpppacket.Cmpp2DeliverRspPkt:
 		pkt = &Packet{
@@ -227,6 +243,8 @@ func (c *conn) readPacket() (*Response, error) {
 		rsp = &Response{
 			Packet: pkt,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp20 deliver response from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 
 	case *cmpppacket.Cmpp3DeliverRspPkt:
 		pkt = &Packet{
@@ -237,6 +255,8 @@ func (c *conn) readPacket() (*Response, error) {
 		rsp = &Response{
 			Packet: pkt,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp30 deliver response from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 
 	case *cmpppacket.CmppActiveTestReqPkt:
 		pkt = &Packet{
@@ -251,6 +271,8 @@ func (c *conn) readPacket() (*Response, error) {
 			},
 			SeqId: p.SeqId,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp active request from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 
 	case *cmpppacket.CmppActiveTestRspPkt:
 		pkt = &Packet{
@@ -261,6 +283,8 @@ func (c *conn) readPacket() (*Response, error) {
 		rsp = &Response{
 			Packet: pkt,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp active response from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 
 	case *cmpppacket.CmppTerminateReqPkt:
 		pkt = &Packet{
@@ -275,6 +299,8 @@ func (c *conn) readPacket() (*Response, error) {
 			},
 			SeqId: p.SeqId,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp terminate request from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 
 	case *cmpppacket.CmppTerminateRspPkt:
 		pkt = &Packet{
@@ -285,6 +311,8 @@ func (c *conn) readPacket() (*Response, error) {
 		rsp = &Response{
 			Packet: pkt,
 		}
+		c.server.ErrorLog.Printf("receive a cmpp terminate response from %v[%d]\n",
+			c.Conn.RemoteAddr(), p.SeqId)
 	default:
 		return nil, cmpppacket.NewOpError(ErrUnsupportedPkt,
 			fmt.Sprintf("readPacket: receive unsupported packet type: %#v", p))
@@ -298,10 +326,11 @@ func (c *conn) close() {
 
 	err := c.Conn.SendPkt(p, <-c.Conn.SeqId)
 	if err != nil {
-		c.server.ErrorLog.Printf("cmpp: close connection error: %v\n", err)
+		c.server.ErrorLog.Printf("send cmpp terminate request packet to %v error: %v\n", c.Conn.RemoteAddr(), err)
 	}
 
 	close(c.done)
+	c.server.ErrorLog.Printf("close connection with %v!\n", c.Conn.RemoteAddr())
 	c.Conn.Close()
 }
 
@@ -332,18 +361,21 @@ func startActiveTest(c *conn) {
 			select {
 			case <-done:
 				// once conn close, the goroutine should exit
+				t.Stop()
 				return
 			case <-t.C:
 				// check whether c.counter exceeds
 				if atomic.LoadInt32(&c.counter) >= c.n {
+					c.server.ErrorLog.Printf("no cmpp active test response returned from %v for %d times!",
+						c.Conn.RemoteAddr(), c.n)
 					exceed <- struct{}{}
-					return
+					break
 				}
 				// send a active test packet to peer, increase the active test counter
 				p := &cmpppacket.CmppActiveTestReqPkt{}
 				err := c.Conn.SendPkt(p, <-c.Conn.SeqId)
 				if err != nil {
-					c.server.ErrorLog.Printf("cmpp server: send active test error: %v", err)
+					c.server.ErrorLog.Printf("send cmpp active test request to %v error: %v", c.Conn.RemoteAddr(), err)
 				} else {
 					atomic.AddInt32(&c.counter, 1)
 				}
@@ -356,7 +388,7 @@ func startActiveTest(c *conn) {
 func (c *conn) serve() {
 	defer func() {
 		if err := recover(); err != nil {
-			c.server.ErrorLog.Printf("cmpp: panic serving %v: %v\n", c.remoteAddr, err)
+			c.server.ErrorLog.Printf("panic serving %v: %v\n", c.Conn.RemoteAddr(), err)
 		}
 	}()
 
@@ -374,10 +406,13 @@ func (c *conn) serve() {
 
 		r, err := c.readPacket()
 		if err != nil {
+			if e, ok := err.(net.Error); ok && e.Timeout() {
+				continue
+			}
 			break
 		}
 
-		_, err = c.server.Handler.ServeCmpp(r, r.Packet)
+		_, err = c.server.Handler.ServeCmpp(r, r.Packet, c.server.ErrorLog)
 		if err1 := c.finishPacket(r); err1 != nil {
 			break
 		}
@@ -391,7 +426,6 @@ func (c *conn) serve() {
 // Create new connection from rwc.
 func (srv *Server) newConn(rwc net.Conn) (c *conn, err error) {
 	c = new(conn)
-	c.remoteAddr = rwc.RemoteAddr().String()
 	c.server = srv
 	c.Conn = cmppconn.New(rwc, srv.Typ)
 	c.Conn.SetState(cmppconn.CONN_CONNECTED)
@@ -413,7 +447,7 @@ func (srv *Server) listenAndServe() error {
 
 // ListenAndServe listens on the TCP network address addr
 // and then calls Serve with handler to handle requests.
-func ListenAndServe(addr string, typ cmpppacket.Type, t time.Duration, n int32, handlers ...Handler) error {
+func ListenAndServe(addr string, typ cmpppacket.Type, t time.Duration, n int32, logWriter io.Writer, handlers ...Handler) error {
 	if addr == "" {
 		return ErrEmptyServerAddr
 	}
@@ -423,17 +457,22 @@ func ListenAndServe(addr string, typ cmpppacket.Type, t time.Duration, n int32, 
 	}
 
 	var handler Handler
-	handler = HandlerFunc(func(r *Response, p *Packet) (bool, error) {
+	handler = HandlerFunc(func(r *Response, p *Packet, l *log.Logger) (bool, error) {
 		for _, h := range handlers {
-			next, err := h.ServeCmpp(r, p)
+			next, err := h.ServeCmpp(r, p, l)
 			if err != nil || !next {
 				return next, err
 			}
 		}
 		return false, nil
 	})
+
+	if logWriter == nil {
+		logWriter = os.Stderr
+	}
 	server := &Server{Addr: addr, Handler: handler, Typ: typ,
-		T: t, N: n}
+		T: t, N: n,
+		ErrorLog: log.New(logWriter, "cmppserver: ", log.LstdFlags)}
 	return server.listenAndServe()
 }
 

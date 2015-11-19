@@ -15,13 +15,22 @@ package cmppconn
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 	"net"
+	"time"
 
 	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
 type State uint8
+
+// Errors for conn operations
+var (
+	ErrConnIsClosed = errors.New("connection is closed")
+)
+
+var noDeadline = time.Time{}
 
 // Conn States
 const (
@@ -59,17 +68,18 @@ func newSeqIdGenerator() (<-chan uint32, chan<- struct{}) {
 	return out, done
 }
 
+// New returns an abstract structure for successfully
+// established underlying net.Conn.
 func New(conn net.Conn, typ cmpppacket.Type) *Conn {
 	seqId, done := newSeqIdGenerator()
 	c := &Conn{
 		Conn:  conn,
 		Typ:   typ,
-		State: CONN_CONNECTED,
 		SeqId: seqId,
 		done:  done,
 	}
 	tc := c.Conn.(*net.TCPConn) // Always tcpconn
-	tc.SetKeepAlive(true)
+	tc.SetKeepAlive(true)       //Keepalive as default
 	return c
 }
 
@@ -78,10 +88,9 @@ func (c *Conn) Close() {
 		if c.State == CONN_CLOSED {
 			return
 		}
-		close(c.done)
-		c.Conn.Close()
+		close(c.done)  // let the SeqId goroutine exit.
+		c.Conn.Close() // close the underlying net.Conn
 		c.State = CONN_CLOSED
-		c = nil
 	}
 }
 
@@ -91,6 +100,10 @@ func (c *Conn) SetState(state State) {
 
 // SendPkt pack the cmpp packet structure and send it to the other peer.
 func (c *Conn) SendPkt(packet cmpppacket.Packer, seqId uint32) error {
+	if c.State == CONN_CLOSED {
+		return ErrConnIsClosed
+	}
+
 	data, err := packet.Pack(seqId)
 	if err != nil {
 		return err
@@ -105,7 +118,17 @@ func (c *Conn) SendPkt(packet cmpppacket.Packer, seqId uint32) error {
 }
 
 // RecvAndUnpackPkt receives cmpp byte stream, and unpack it to some cmpp packet structure.
-func (c *Conn) RecvAndUnpackPkt() (interface{}, error) {
+func (c *Conn) RecvAndUnpackPkt(timeout time.Duration) (interface{}, error) {
+	if c.State == CONN_CLOSED {
+		return nil, ErrConnIsClosed
+	}
+
+	if timeout != 0 {
+		t := time.Now().Add(timeout)
+		c.SetReadDeadline(t)
+		defer c.SetReadDeadline(noDeadline)
+	}
+
 	// Total_Length in packet
 	var totalLen uint32
 	err := binary.Read(c.Conn, binary.BigEndian, &totalLen)

@@ -18,13 +18,13 @@ const (
 
 func main() {
 	c := cmppclient.New(cmpppacket.V30)
-	defer c.Free()
+	defer c.Disconnect()
 	err := c.Connect(":8888", user, password, connectTimeout)
 	if err != nil {
 		log.Println("client connect error:", err)
 		return
 	}
-	log.Println("client connect ok")
+	log.Println("client connect and auth ok")
 
 	t := time.NewTicker(time.Second * 5)
 	defer t.Stop()
@@ -63,41 +63,45 @@ func main() {
 			err = c.SendReqPkt(p)
 			if err != nil {
 				log.Println("send a cmpp3 submit request error:", err)
+			} else {
+				log.Println("send a cmpp3 submit request")
 			}
 			break
 		default:
 		}
 
 		// recv packets
-		i, err := c.RecvAndUnpackPkt()
+		i, err := c.RecvAndUnpackPkt(0)
 		if err != nil {
-			log.Println("client read and unpack pkt error", err)
+			log.Println("client read and unpack pkt error:", err)
 			break
 		}
 
 		switch p := i.(type) {
 		case *cmpppacket.Cmpp3SubmitRspPkt:
-			log.Println("recv a cmpp3 submit response:", p)
+			log.Println("receive a cmpp3 submit response:", p)
+
 		case *cmpppacket.CmppActiveTestReqPkt:
-			log.Println("recv a cmpp active request:", p)
+			log.Println("receive a cmpp active request:", p)
 			rsp := &cmpppacket.CmppActiveTestRspPkt{}
 			err := c.SendRspPkt(rsp, p.SeqId)
 			if err != nil {
-				log.Println("send  cmpp active response error:", err)
+				log.Println("send cmpp active response error:", err)
 				break
 			}
 		case *cmpppacket.CmppActiveTestRspPkt:
-			log.Println("recv a cmpp activetest response:", p)
+			log.Println("receive a cmpp activetest response:", p)
+
 		case *cmpppacket.CmppTerminateReqPkt:
-			log.Println("recv a cmpp terminate request:", p)
+			log.Println("receive a cmpp terminate request:", p)
 			rsp := &cmpppacket.CmppTerminateRspPkt{}
 			err := c.SendRspPkt(rsp, p.SeqId)
 			if err != nil {
-				log.Println("send  cmpp terminate response error:", err)
+				log.Println("send cmpp terminate response error:", err)
 				break
 			}
 		case *cmpppacket.CmppTerminateRspPkt:
-			log.Println("recv a cmpp terminate response:", p)
+			log.Println("receive a cmpp terminate response:", p)
 		}
 	}
 }

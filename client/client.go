@@ -24,7 +24,6 @@ import (
 
 var ErrNotCompleted = errors.New("data not being handled completed")
 var ErrRespNotMatch = errors.New("the response is not matched with the request")
-var ErrConnClosed = errors.New("the conn is closed")
 
 // Client stands for one client-side instance, just like a session.
 // It may connect to the server, send & recv cmpp packets and terminate the connection.
@@ -37,15 +36,6 @@ type Client struct {
 func New(typ cmpppacket.Type) *Client {
 	return &Client{
 		typ: typ,
-	}
-}
-
-func (cli *Client) Free() {
-	if cli != nil {
-		if cli.conn != nil {
-			cli.conn.Close()
-		}
-		cli = nil
 	}
 }
 
@@ -63,6 +53,7 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 			cli.conn.Close()
 		}
 	}()
+	cli.conn.SetState(cmppconn.CONN_CONNECTED)
 
 	// Login to the server.
 	req := &cmpppacket.CmppConnReqPkt{
@@ -76,7 +67,7 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 		return err
 	}
 
-	p, err := cli.conn.RecvAndUnpackPkt()
+	p, err := cli.conn.RecvAndUnpackPkt(0)
 	if err != nil {
 		return err
 	}
@@ -107,26 +98,21 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 	return nil
 }
 
+func (cli *Client) Disconnect() {
+	cli.conn.Close()
+}
+
 // SendReqPkt pack the cmpp request packet structure and send it to the other peer.
 func (cli *Client) SendReqPkt(packet cmpppacket.Packer) error {
-	if cli.conn == nil {
-		return ErrConnClosed
-	}
 	return cli.conn.SendPkt(packet, <-cli.conn.SeqId)
 }
 
 // SendRspPkt pack the cmpp response packet structure and send it to the other peer.
 func (cli *Client) SendRspPkt(packet cmpppacket.Packer, seqId uint32) error {
-	if cli.conn == nil {
-		return ErrConnClosed
-	}
 	return cli.conn.SendPkt(packet, seqId)
 }
 
 // RecvAndUnpackPkt receives cmpp byte stream, and unpack it to some cmpp packet structure.
-func (cli *Client) RecvAndUnpackPkt() (interface{}, error) {
-	if cli.conn == nil {
-		return nil, ErrConnClosed
-	}
-	return cli.conn.RecvAndUnpackPkt()
+func (cli *Client) RecvAndUnpackPkt(timeout time.Duration) (interface{}, error) {
+	return cli.conn.RecvAndUnpackPkt(timeout)
 }
