@@ -16,8 +16,6 @@ package cmpppacket_test
 import (
 	"testing"
 
-	cmppconn "github.com/bigwhite/gocmpp/conn"
-
 	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
@@ -25,8 +23,8 @@ var (
 	connSourceAddr        = "900001"
 	connSecret            = "888888"
 	connTimestamp  uint32 = 1021080510
-	connVersion           = cmpppacket.Type(cmppconn.V21)
-	connVersion1          = cmpppacket.Type(cmppconn.V30)
+	connVersion           = cmpppacket.V21
+	connVersion1          = cmpppacket.V30
 	seqId          uint32 = 0x17
 )
 
