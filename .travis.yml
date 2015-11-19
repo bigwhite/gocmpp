@@ -13,6 +13,6 @@ env:
 
 script: 
     - go build ./client ./server ./utils ./conn 
-    - go build -o ./examples/server ./examples/server.go
-    - go build -o ./examples/client ./examples/client.go
+    - go build -o ./examples/server/server ./examples/server/server.go
+    - go build -o ./examples/client/client ./examples/client/client.go
     - go test ./client ./server ./utils ./conn
