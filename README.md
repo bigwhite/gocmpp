@@ -44,8 +44,8 @@ ok  	github.com/bigwhite/gocmpp/conn	0.010s
 ###3. run the examples
 
 run the two programs below in order:
-./examples/server/server
-./examples/client/client
+ * ./examples/server/server
+ * ./examples/client/client
 
 you would get the output like below:
 
@@ -65,9 +65,10 @@ cmppserver: 2015/11/19 16:29:10 receive a cmpp active response from 127.0.0.1:49
 cmppserver: 2015/11/19 16:29:10 receive a cmpp30 submit request from 127.0.0.1:49847[3]
 cmppserver: 2015/11/19 16:29:10 handleSubmit: handle submit from 900001 ok! msgid[12878564852733378560], srcId[900001], destTerminalId[13500002696]
 cmppserver: 2015/11/19 16:29:13 close connection with 127.0.0.1:49847!
-
+```
 
 client:
+
 ```
 2015/11/19 16:28:50 client connect and auth ok
 2015/11/19 16:28:55 receive a cmpp active request: &{0}
