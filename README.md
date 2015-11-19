@@ -8,6 +8,13 @@ The protocol versions below are covered：
 * [cmpp2.1](http://pan.baidu.com/s/13E0Q6)
 * [cmpp3.0](http://pan.baidu.com/s/1o61obA6)
 
+## Overview
+gocmpp is a library that implements China Mobile Peer to Peer(cmpp) protocol. You can use the lib to implement any app, tool or system that use cmpp protocol for both client and server side.
+
+gocmpp is portable well. It can be used on linux, darwin or even windows.
+
+gocmpp has covered cmpp2.x and cmpp3.x versions. It has supported the connect, submit, deliver, fwd, active test, and terminate packets of cmpp protocol. But other less use packets like cmpp query, cancel and route have not been supported. And they are not in the roadmap at all.
+
 ## QuickStart
 
 ###1. Download gocmpp
@@ -16,7 +23,11 @@ $go get github.com/bigwhite/gocmpp
 ```
 
 ###2. Build gocmpp
+
+gocmpp's build use the vendor mechanism introduced in go 1.5, so we need go 1.5 or later version to build it.
+
 ```
+$export GO15VENDOREXPERIMENT="1"
 $cd $GOPATH/src/github.com/bigwhite/gocmpp
 $make
 go build -o ./examples/server/server ./examples/server/server.go
