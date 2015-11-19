@@ -1,10 +1,12 @@
+subdirectories = ./client ./server ./utils ./packet ./conn
+
 all: examples build test 
 
 build:
-	go build ./client ./server ./utils ./packet ./conn
+	go build $(subdirectories)
 
 test:
-	go test ./client ./server ./utils ./packet ./conn
+	go test $(subdirectories)
 
 examples: ./examples/server/server ./examples/client/client
 

@@ -41,7 +41,7 @@ ok  	github.com/bigwhite/gocmpp/packet	0.009s
 ok  	github.com/bigwhite/gocmpp/conn	0.010s
 ```
 
-###3. run the examples
+###3. Run the examples
 
 run the two programs below in order:
  * ./examples/server/server
