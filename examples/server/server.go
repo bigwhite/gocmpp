@@ -19,7 +19,9 @@ const (
 func handleLogin(r *cmppserver.Response, p *cmppserver.Packet, l *log.Logger) (bool, error) {
 	req, ok := p.Packer.(*cmpppacket.CmppConnReqPkt)
 	if !ok {
-		return true, nil // go on to next handler
+		// not a connect request, ignore it,
+		// go on to next handler
+		return true, nil
 	}
 
 	resp := r.Packer.(*cmpppacket.Cmpp3ConnRspPkt)
@@ -73,13 +75,17 @@ func handleSubmit(r *cmppserver.Response, p *cmppserver.Packet, l *log.Logger) (
 }
 
 func main() {
+	var handlers = []cmppserver.Handler{
+		cmppserver.HandlerFunc(handleLogin),
+		cmppserver.HandlerFunc(handleSubmit),
+	}
+
 	err := cmppserver.ListenAndServe(":8888",
 		cmpppacket.V30,
 		5*time.Second,
 		3,
 		nil,
-		cmppserver.HandlerFunc(handleLogin),
-		cmppserver.HandlerFunc(handleSubmit),
+		handlers...,
 	)
 	if err != nil {
 		log.Println("cmpp ListenAndServ error:", err)
