@@ -361,7 +361,6 @@ func startActiveTest(c *conn) {
 			select {
 			case <-done:
 				// once conn close, the goroutine should exit
-				t.Stop()
 				return
 			case <-t.C:
 				// check whether c.counter exceeds
