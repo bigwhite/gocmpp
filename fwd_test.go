@@ -11,13 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmpppacket_test
+package cmpp_test
 
 import (
 	"fmt"
 	"testing"
 
-	cmpppacket "github.com/bigwhite/gocmpp/packet"
+	"github.com/bigwhite/gocmpp"
 	"github.com/bigwhite/gocmpp/utils"
 )
 
@@ -65,7 +65,7 @@ func init() {
 }
 
 func TestCmpp2FwdReqPktPack(t *testing.T) {
-	p := &cmpppacket.Cmpp2FwdReqPkt{
+	p := &cmpp.Cmpp2FwdReqPkt{
 		SourceId:           sourceId,
 		DestinationId:      destinationId,
 		NodesCount:         nodesCount,
@@ -145,7 +145,7 @@ func TestCmpp2FwdReqPktUnpack(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, 0x00,
 	}
 
-	p := &cmpppacket.Cmpp2FwdReqPkt{}
+	p := &cmpp.Cmpp2FwdReqPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp2FwdReqPkt unpack error:", err)
@@ -190,7 +190,7 @@ func TestCmpp2FwdReqPktUnpack(t *testing.T) {
 }
 
 func TestCmpp2FwdRspPktPack(t *testing.T) {
-	p := &cmpppacket.Cmpp2FwdRspPkt{
+	p := &cmpp.Cmpp2FwdRspPkt{
 		MsgId:    12878564852733378560, //0xb2, 0xb9, 0xda, 0x80, 0x00, 0x01, 0x00, 0x00
 		PkTotal:  fwdPkTotal,
 		PkNumber: fwdPkNumber,
@@ -230,7 +230,7 @@ func TestCmpp2FwdRspPktUnpack(t *testing.T) {
 		0xb2, 0xb9, 0xda, 0x80, 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00,
 	}
 
-	p := &cmpppacket.Cmpp2FwdRspPkt{}
+	p := &cmpp.Cmpp2FwdRspPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp2FwdRspPkt unpack error:", err)
@@ -256,7 +256,7 @@ func TestCmpp2FwdRspPktUnpack(t *testing.T) {
 }
 
 func TestCmpp3FwdReqPktPack(t *testing.T) {
-	p := &cmpppacket.Cmpp3FwdReqPkt{
+	p := &cmpp.Cmpp3FwdReqPkt{
 		SourceId:            sourceId,
 		DestinationId:       destinationId,
 		NodesCount:          nodesCount,
@@ -355,7 +355,7 @@ func TestCmpp3FwdReqPktUnpack(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, 0x00,
 	}
 
-	p := &cmpppacket.Cmpp3FwdReqPkt{}
+	p := &cmpp.Cmpp3FwdReqPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp3FwdReqPkt unpack error:", err)
@@ -405,7 +405,7 @@ func TestCmpp3FwdReqPktUnpack(t *testing.T) {
 }
 
 func TestCmpp3FwdRspPktPack(t *testing.T) {
-	p := &cmpppacket.Cmpp3FwdRspPkt{
+	p := &cmpp.Cmpp3FwdRspPkt{
 		MsgId:    12878564852733378560, //0xb2, 0xb9, 0xda, 0x80, 0x00, 0x01, 0x00, 0x00
 		PkTotal:  fwdPkTotal,
 		PkNumber: fwdPkNumber,
@@ -447,7 +447,7 @@ func TestCmpp3FwdRspPktUnpack(t *testing.T) {
 		0x00, 0x01,
 	}
 
-	p := &cmpppacket.Cmpp3FwdRspPkt{}
+	p := &cmpp.Cmpp3FwdRspPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp3FwdRspPkt unpack error:", err)

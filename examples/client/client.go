@@ -5,8 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/bigwhite/gocmpp/client"
-	"github.com/bigwhite/gocmpp/packet"
+	"github.com/bigwhite/gocmpp"
 	"github.com/bigwhite/gocmpp/utils"
 )
 
@@ -17,7 +16,7 @@ const (
 )
 
 func main() {
-	c := cmppclient.New(cmpppacket.V30)
+	c := cmpp.NewClient(cmpp.V30)
 	defer c.Disconnect()
 	err := c.Connect(":8888", user, password, connectTimeout)
 	if err != nil {
@@ -37,7 +36,7 @@ func main() {
 				fmt.Println("utf8 to ucs2 transform err:", err)
 				return
 			}
-			p := &cmpppacket.Cmpp3SubmitReqPkt{
+			p := &cmpp.Cmpp3SubmitReqPkt{
 				PkTotal:            1,
 				PkNumber:           1,
 				RegisteredDelivery: 1,
@@ -78,29 +77,29 @@ func main() {
 		}
 
 		switch p := i.(type) {
-		case *cmpppacket.Cmpp3SubmitRspPkt:
+		case *cmpp.Cmpp3SubmitRspPkt:
 			log.Println("receive a cmpp3 submit response:", p)
 
-		case *cmpppacket.CmppActiveTestReqPkt:
+		case *cmpp.CmppActiveTestReqPkt:
 			log.Println("receive a cmpp active request:", p)
-			rsp := &cmpppacket.CmppActiveTestRspPkt{}
+			rsp := &cmpp.CmppActiveTestRspPkt{}
 			err := c.SendRspPkt(rsp, p.SeqId)
 			if err != nil {
 				log.Println("send cmpp active response error:", err)
 				break
 			}
-		case *cmpppacket.CmppActiveTestRspPkt:
+		case *cmpp.CmppActiveTestRspPkt:
 			log.Println("receive a cmpp activetest response:", p)
 
-		case *cmpppacket.CmppTerminateReqPkt:
+		case *cmpp.CmppTerminateReqPkt:
 			log.Println("receive a cmpp terminate request:", p)
-			rsp := &cmpppacket.CmppTerminateRspPkt{}
+			rsp := &cmpp.CmppTerminateRspPkt{}
 			err := c.SendRspPkt(rsp, p.SeqId)
 			if err != nil {
 				log.Println("send cmpp terminate response error:", err)
 				break
 			}
-		case *cmpppacket.CmppTerminateRspPkt:
+		case *cmpp.CmppTerminateRspPkt:
 			log.Println("receive a cmpp terminate response:", p)
 		}
 	}

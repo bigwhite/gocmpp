@@ -11,13 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmpppacket_test
+package cmpp_test
 
 import (
 	"fmt"
 	"testing"
 
-	cmpppacket "github.com/bigwhite/gocmpp/packet"
+	"github.com/bigwhite/gocmpp"
 	"github.com/bigwhite/gocmpp/utils"
 )
 
@@ -56,7 +56,7 @@ func init() {
 }
 
 func TestCmpp2SubmitReqPktPack(t *testing.T) {
-	p := &cmpppacket.Cmpp2SubmitReqPkt{
+	p := &cmpp.Cmpp2SubmitReqPkt{
 		PkTotal:            pkTotal,
 		PkNumber:           pkNumber,
 		RegisteredDelivery: registeredDelivery,
@@ -130,7 +130,7 @@ func TestCmpp2SubmitReqPktUnpack(t *testing.T) {
 		0x6d, 0x00, 0x69, 0x00, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}
 
-	p := &cmpppacket.Cmpp2SubmitReqPkt{}
+	p := &cmpp.Cmpp2SubmitReqPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp2SubmitReqPkt unpack error:", err)
@@ -169,7 +169,7 @@ func TestCmpp2SubmitReqPktUnpack(t *testing.T) {
 }
 
 func TestCmpp2SubmitRspPktPack(t *testing.T) {
-	p := &cmpppacket.Cmpp2SubmitRspPkt{
+	p := &cmpp.Cmpp2SubmitRspPkt{
 		MsgId:  12878564852733378560, //0xb2, 0xb9, 0xda, 0x80, 0x00, 0x01, 0x00, 0x00
 		Result: 0,
 	}
@@ -207,7 +207,7 @@ func TestCmpp2SubmitRspPktUnpack(t *testing.T) {
 		0xb2, 0xb9, 0xda, 0x80, 0x00, 0x01, 0x00, 0x00, 0x00,
 	}
 
-	p := &cmpppacket.Cmpp2SubmitRspPkt{}
+	p := &cmpp.Cmpp2SubmitRspPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp2SubmitRspPkt unpack error:", err)
@@ -228,7 +228,7 @@ func TestCmpp2SubmitRspPktUnpack(t *testing.T) {
 }
 
 func TestCmpp3SubmitReqPktPack(t *testing.T) {
-	p := &cmpppacket.Cmpp3SubmitReqPkt{
+	p := &cmpp.Cmpp3SubmitReqPkt{
 		PkTotal:            pkTotal,
 		PkNumber:           pkNumber,
 		RegisteredDelivery: registeredDelivery,
@@ -310,7 +310,7 @@ func TestCmpp3SubmitReqPktUnpack(t *testing.T) {
 		0x00,
 	}
 
-	p := &cmpppacket.Cmpp3SubmitReqPkt{}
+	p := &cmpp.Cmpp3SubmitReqPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp3SubmitReqPkt unpack error:", err)
@@ -352,7 +352,7 @@ func TestCmpp3SubmitReqPktUnpack(t *testing.T) {
 }
 
 func TestCmpp3SubmitRspPktPack(t *testing.T) {
-	p := &cmpppacket.Cmpp3SubmitRspPkt{
+	p := &cmpp.Cmpp3SubmitRspPkt{
 		MsgId:  12878564852733378560, //0xb2, 0xb9, 0xda, 0x80, 0x00, 0x01, 0x00, 0x00
 		Result: 0,
 	}
@@ -390,7 +390,7 @@ func TestCmpp3SubmitRspPktUnpack(t *testing.T) {
 		0xb2, 0xb9, 0xda, 0x80, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}
 
-	p := &cmpppacket.Cmpp3SubmitRspPkt{}
+	p := &cmpp.Cmpp3SubmitRspPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp3SubmitRspPkt unpack error:", err)

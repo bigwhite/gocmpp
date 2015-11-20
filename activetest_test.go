@@ -11,16 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmpppacket_test
+package cmpp_test
 
 import (
 	"testing"
 
-	cmpppacket "github.com/bigwhite/gocmpp/packet"
+	"github.com/bigwhite/gocmpp"
 )
 
 func TestCmppActiveTestReqPktPack(t *testing.T) {
-	p := &cmpppacket.CmppActiveTestReqPkt{}
+	p := &cmpp.CmppActiveTestReqPkt{}
 
 	data, err := p.Pack(seqId)
 	if err != nil {
@@ -55,7 +55,7 @@ func TestCmppActiveTestReqUnpack(t *testing.T) {
 		0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x17,
 	}
 
-	p := &cmpppacket.CmppActiveTestReqPkt{}
+	p := &cmpp.CmppActiveTestReqPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("CmppActiveTestReqPkt unpack error:", err)
@@ -67,7 +67,7 @@ func TestCmppActiveTestReqUnpack(t *testing.T) {
 }
 
 func TestCmppActiveTestRspPktPack(t *testing.T) {
-	p := &cmpppacket.CmppActiveTestRspPkt{}
+	p := &cmpp.CmppActiveTestRspPkt{}
 
 	data, err := p.Pack(seqId)
 	if err != nil {
@@ -102,7 +102,7 @@ func TestCmppActiveTestRspUnpack(t *testing.T) {
 		0x00, 0x00, 0x00, 0x0d, 0x80, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x17, 0x00,
 	}
 
-	p := &cmpppacket.CmppActiveTestRspPkt{}
+	p := &cmpp.CmppActiveTestRspPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("CmppActiveTestRspPkt unpack error:", err)

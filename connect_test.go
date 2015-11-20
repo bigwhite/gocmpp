@@ -11,25 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmpppacket_test
+package cmpp_test
 
 import (
 	"testing"
 
-	cmpppacket "github.com/bigwhite/gocmpp/packet"
+	"github.com/bigwhite/gocmpp"
 )
 
 var (
 	connSourceAddr        = "900001"
 	connSecret            = "888888"
 	connTimestamp  uint32 = 1021080510
-	connVersion           = cmpppacket.V21
-	connVersion1          = cmpppacket.V30
+	connVersion           = cmpp.V21
+	connVersion1          = cmpp.V30
 	seqId          uint32 = 0x17
 )
 
 func TestCmppConnReqPktPack(t *testing.T) {
-	p := &cmpppacket.CmppConnReqPkt{
+	p := &cmpp.CmppConnReqPkt{
 		SrcAddr:   connSourceAddr,
 		Version:   connVersion,
 		Secret:    connSecret,
@@ -81,7 +81,7 @@ func TestCmppConnReqPktUnpack(t *testing.T) {
 		0x5d, 0x16, 0x21, 0x3c, 0xdc, 0x73, 0xbe,
 	}
 
-	p := &cmpppacket.CmppConnReqPkt{}
+	p := &cmpp.CmppConnReqPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("CmppConnReqPkt unpack error:", err)
@@ -121,7 +121,7 @@ func TestCmpp2ConnRspPktPack(t *testing.T) {
 		0x4f, 0x65, 0xf6, 0xbc, 0xf8, 0x53, 0x5d, 0x16,
 	}
 
-	p := &cmpppacket.Cmpp2ConnRspPkt{
+	p := &cmpp.Cmpp2ConnRspPkt{
 		Status:  0x0,
 		Version: connVersion,
 		Secret:  connSecret,
@@ -165,7 +165,7 @@ func TestCmpp2ConnRspUnpack(t *testing.T) {
 		0x0f, 0x4b, 0xd8, 0x21,
 	}
 
-	p := &cmpppacket.Cmpp2ConnRspPkt{}
+	p := &cmpp.Cmpp2ConnRspPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp2ConnRspPkt unpack error:", err)
@@ -202,7 +202,7 @@ func TestCmpp3ConnRspPktPack(t *testing.T) {
 		0x4f, 0x65, 0xf6, 0xbc, 0xf8, 0x53, 0x5d, 0x16,
 	}
 
-	p := &cmpppacket.Cmpp3ConnRspPkt{
+	p := &cmpp.Cmpp3ConnRspPkt{
 		Status:  0x0,
 		Version: connVersion1,
 		Secret:  connSecret,
@@ -246,7 +246,7 @@ func TestCmpp3ConnRspUnpack(t *testing.T) {
 		0x30,
 	}
 
-	p := &cmpppacket.Cmpp3ConnRspPkt{}
+	p := &cmpp.Cmpp3ConnRspPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("Cmpp3ConnRspPkt unpack error:", err)

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmppserver
+package cmpp
 
 import (
 	"errors"
@@ -22,9 +22,6 @@ import (
 	"os"
 	"sync/atomic"
 	"time"
-
-	cmppconn "github.com/bigwhite/gocmpp/conn"
-	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
 // errors for cmpp server
@@ -35,13 +32,13 @@ var (
 )
 
 type Packet struct {
-	cmpppacket.Packer
-	*cmppconn.Conn
+	Packer
+	*Conn
 }
 
 type Response struct {
 	*Packet
-	cmpppacket.Packer
+	Packer
 	SeqId uint32
 }
 
@@ -72,7 +69,7 @@ type Server struct {
 	Handler Handler
 
 	// protocol info
-	Typ cmpppacket.Type
+	Typ Type
 	T   time.Duration // interval betwwen two active tests
 	N   int32         // continuous send times when no response back
 
@@ -85,7 +82,7 @@ type Server struct {
 
 // A conn represents the server side of a Cmpp connection.
 type conn struct {
-	*cmppconn.Conn
+	*Conn
 	server *Server // the Server on which the connection arrived
 
 	// for active test
@@ -142,16 +139,16 @@ func (c *conn) readPacket() (*Response, error) {
 	var pkt *Packet
 	var rsp *Response
 	switch p := i.(type) {
-	case *cmpppacket.CmppConnReqPkt:
+	case *CmppConnReqPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
 		}
 
-		if typ == cmpppacket.V30 {
+		if typ == V30 {
 			rsp = &Response{
 				Packet: pkt,
-				Packer: &cmpppacket.Cmpp3ConnRspPkt{
+				Packer: &Cmpp3ConnRspPkt{
 					SeqId: p.SeqId,
 				},
 				SeqId: p.SeqId,
@@ -161,7 +158,7 @@ func (c *conn) readPacket() (*Response, error) {
 		} else {
 			rsp = &Response{
 				Packet: pkt,
-				Packer: &cmpppacket.Cmpp2ConnRspPkt{
+				Packer: &Cmpp2ConnRspPkt{
 					SeqId: p.SeqId,
 				},
 				SeqId: p.SeqId,
@@ -170,7 +167,7 @@ func (c *conn) readPacket() (*Response, error) {
 				c.Conn.RemoteAddr(), p.SeqId)
 		}
 
-	case *cmpppacket.Cmpp2SubmitReqPkt:
+	case *Cmpp2SubmitReqPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -178,7 +175,7 @@ func (c *conn) readPacket() (*Response, error) {
 
 		rsp = &Response{
 			Packet: pkt,
-			Packer: &cmpppacket.Cmpp2SubmitRspPkt{
+			Packer: &Cmpp2SubmitRspPkt{
 				SeqId: p.SeqId,
 			},
 			SeqId: p.SeqId,
@@ -186,7 +183,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp20 submit request from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 
-	case *cmpppacket.Cmpp3SubmitReqPkt:
+	case *Cmpp3SubmitReqPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -194,7 +191,7 @@ func (c *conn) readPacket() (*Response, error) {
 
 		rsp = &Response{
 			Packet: pkt,
-			Packer: &cmpppacket.Cmpp3SubmitRspPkt{
+			Packer: &Cmpp3SubmitRspPkt{
 				SeqId: p.SeqId,
 			},
 			SeqId: p.SeqId,
@@ -202,7 +199,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp30 submit request from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 
-	case *cmpppacket.Cmpp2FwdReqPkt:
+	case *Cmpp2FwdReqPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -210,7 +207,7 @@ func (c *conn) readPacket() (*Response, error) {
 
 		rsp = &Response{
 			Packet: pkt,
-			Packer: &cmpppacket.Cmpp2FwdRspPkt{
+			Packer: &Cmpp2FwdRspPkt{
 				SeqId: p.SeqId,
 			},
 			SeqId: p.SeqId,
@@ -218,7 +215,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp20 forward request from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 
-	case *cmpppacket.Cmpp3FwdReqPkt:
+	case *Cmpp3FwdReqPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -226,7 +223,7 @@ func (c *conn) readPacket() (*Response, error) {
 
 		rsp = &Response{
 			Packet: pkt,
-			Packer: &cmpppacket.Cmpp3FwdRspPkt{
+			Packer: &Cmpp3FwdRspPkt{
 				SeqId: p.SeqId,
 			},
 			SeqId: p.SeqId,
@@ -234,7 +231,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp30 forward request from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 
-	case *cmpppacket.Cmpp2DeliverRspPkt:
+	case *Cmpp2DeliverRspPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -246,7 +243,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp20 deliver response from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 
-	case *cmpppacket.Cmpp3DeliverRspPkt:
+	case *Cmpp3DeliverRspPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -258,7 +255,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp30 deliver response from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 
-	case *cmpppacket.CmppActiveTestReqPkt:
+	case *CmppActiveTestReqPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -266,7 +263,7 @@ func (c *conn) readPacket() (*Response, error) {
 
 		rsp = &Response{
 			Packet: pkt,
-			Packer: &cmpppacket.CmppActiveTestRspPkt{
+			Packer: &CmppActiveTestRspPkt{
 				SeqId: p.SeqId,
 			},
 			SeqId: p.SeqId,
@@ -274,7 +271,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp active request from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 
-	case *cmpppacket.CmppActiveTestRspPkt:
+	case *CmppActiveTestRspPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -286,7 +283,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp active response from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 
-	case *cmpppacket.CmppTerminateReqPkt:
+	case *CmppTerminateReqPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -294,7 +291,7 @@ func (c *conn) readPacket() (*Response, error) {
 
 		rsp = &Response{
 			Packet: pkt,
-			Packer: &cmpppacket.CmppTerminateRspPkt{
+			Packer: &CmppTerminateRspPkt{
 				SeqId: p.SeqId,
 			},
 			SeqId: p.SeqId,
@@ -302,7 +299,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp terminate request from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 
-	case *cmpppacket.CmppTerminateRspPkt:
+	case *CmppTerminateRspPkt:
 		pkt = &Packet{
 			Packer: p,
 			Conn:   c.Conn,
@@ -314,7 +311,7 @@ func (c *conn) readPacket() (*Response, error) {
 		c.server.ErrorLog.Printf("receive a cmpp terminate response from %v[%d]\n",
 			c.Conn.RemoteAddr(), p.SeqId)
 	default:
-		return nil, cmpppacket.NewOpError(ErrUnsupportedPkt,
+		return nil, NewOpError(ErrUnsupportedPkt,
 			fmt.Sprintf("readPacket: receive unsupported packet type: %#v", p))
 	}
 	return rsp, nil
@@ -322,7 +319,7 @@ func (c *conn) readPacket() (*Response, error) {
 
 // Close the connection.
 func (c *conn) close() {
-	p := &cmpppacket.CmppTerminateReqPkt{}
+	p := &CmppTerminateReqPkt{}
 
 	err := c.Conn.SendPkt(p, <-c.Conn.SeqId)
 	if err != nil {
@@ -335,7 +332,7 @@ func (c *conn) close() {
 }
 
 func (c *conn) finishPacket(r *Response) error {
-	if _, ok := r.Packet.Packer.(*cmpppacket.CmppActiveTestRspPkt); ok {
+	if _, ok := r.Packet.Packer.(*CmppActiveTestRspPkt); ok {
 		atomic.AddInt32(&c.counter, -1)
 		return nil
 	}
@@ -371,7 +368,7 @@ func startActiveTest(c *conn) {
 					break
 				}
 				// send a active test packet to peer, increase the active test counter
-				p := &cmpppacket.CmppActiveTestReqPkt{}
+				p := &CmppActiveTestReqPkt{}
 				err := c.Conn.SendPkt(p, <-c.Conn.SeqId)
 				if err != nil {
 					c.server.ErrorLog.Printf("send cmpp active test request to %v error: %v", c.Conn.RemoteAddr(), err)
@@ -426,8 +423,8 @@ func (c *conn) serve() {
 func (srv *Server) newConn(rwc net.Conn) (c *conn, err error) {
 	c = new(conn)
 	c.server = srv
-	c.Conn = cmppconn.New(rwc, srv.Typ)
-	c.Conn.SetState(cmppconn.CONN_CONNECTED)
+	c.Conn = NewConn(rwc, srv.Typ)
+	c.Conn.SetState(CONN_CONNECTED)
 	c.n = c.server.N
 	c.t = c.server.T
 	return c, nil
@@ -446,7 +443,7 @@ func (srv *Server) listenAndServe() error {
 
 // ListenAndServe listens on the TCP network address addr
 // and then calls Serve with handler to handle requests.
-func ListenAndServe(addr string, typ cmpppacket.Type, t time.Duration, n int32, logWriter io.Writer, handlers ...Handler) error {
+func ListenAndServe(addr string, typ Type, t time.Duration, n int32, logWriter io.Writer, handlers ...Handler) error {
 	if addr == "" {
 		return ErrEmptyServerAddr
 	}

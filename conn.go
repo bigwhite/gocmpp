@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmppconn
+package cmpp
 
 import (
 	"encoding/binary"
@@ -19,8 +19,6 @@ import (
 	"io"
 	"net"
 	"time"
-
-	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
 type State uint8
@@ -42,7 +40,7 @@ const (
 type Conn struct {
 	net.Conn
 	State State
-	Typ   cmpppacket.Type
+	Typ   Type
 
 	// for SeqId generator goroutine
 	SeqId <-chan uint32
@@ -70,7 +68,7 @@ func newSeqIdGenerator() (<-chan uint32, chan<- struct{}) {
 
 // New returns an abstract structure for successfully
 // established underlying net.Conn.
-func New(conn net.Conn, typ cmpppacket.Type) *Conn {
+func NewConn(conn net.Conn, typ Type) *Conn {
 	seqId, done := newSeqIdGenerator()
 	c := &Conn{
 		Conn:  conn,
@@ -99,7 +97,7 @@ func (c *Conn) SetState(state State) {
 }
 
 // SendPkt pack the cmpp packet structure and send it to the other peer.
-func (c *Conn) SendPkt(packet cmpppacket.Packer, seqId uint32) error {
+func (c *Conn) SendPkt(packet Packer, seqId uint32) error {
 	if c.State == CONN_CLOSED {
 		return ErrConnIsClosed
 	}
@@ -136,28 +134,28 @@ func (c *Conn) RecvAndUnpackPkt(timeout time.Duration) (interface{}, error) {
 		return nil, err
 	}
 
-	if c.Typ == cmpppacket.V30 {
-		if totalLen < cmpppacket.CMPP3_PACKET_MIN || totalLen > cmpppacket.CMPP3_PACKET_MAX {
-			return nil, cmpppacket.ErrTotalLengthInvalid
+	if c.Typ == V30 {
+		if totalLen < CMPP3_PACKET_MIN || totalLen > CMPP3_PACKET_MAX {
+			return nil, ErrTotalLengthInvalid
 		}
 	}
 
-	if c.Typ == cmpppacket.V21 || c.Typ == cmpppacket.V20 {
-		if totalLen < cmpppacket.CMPP2_PACKET_MIN || totalLen > cmpppacket.CMPP2_PACKET_MAX {
-			return nil, cmpppacket.ErrTotalLengthInvalid
+	if c.Typ == V21 || c.Typ == V20 {
+		if totalLen < CMPP2_PACKET_MIN || totalLen > CMPP2_PACKET_MAX {
+			return nil, ErrTotalLengthInvalid
 		}
 	}
 
 	// Command_Id
-	var commandId cmpppacket.CommandId
+	var commandId CommandId
 	err = binary.Read(c.Conn, binary.BigEndian, &commandId)
 	if err != nil {
 		return nil, err
 	}
 
-	if !((commandId > cmpppacket.CMPP_REQUEST_MIN && commandId < cmpppacket.CMPP_REQUEST_MAX) ||
-		(commandId > cmpppacket.CMPP_RESPONSE_MIN && commandId < cmpppacket.CMPP_RESPONSE_MAX)) {
-		return nil, cmpppacket.ErrCommandIdInvalid
+	if !((commandId > CMPP_REQUEST_MIN && commandId < CMPP_REQUEST_MAX) ||
+		(commandId > CMPP_RESPONSE_MIN && commandId < CMPP_RESPONSE_MAX)) {
+		return nil, ErrCommandIdInvalid
 	}
 
 	// The left packet data (start from seqId in header).
@@ -167,64 +165,64 @@ func (c *Conn) RecvAndUnpackPkt(timeout time.Duration) (interface{}, error) {
 		return nil, err
 	}
 
-	var p cmpppacket.Packer
+	var p Packer
 	switch commandId {
-	case cmpppacket.CMPP_CONNECT:
-		p = &cmpppacket.CmppConnReqPkt{}
-	case cmpppacket.CMPP_CONNECT_RESP:
-		if c.Typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3ConnRspPkt{}
+	case CMPP_CONNECT:
+		p = &CmppConnReqPkt{}
+	case CMPP_CONNECT_RESP:
+		if c.Typ == V30 {
+			p = &Cmpp3ConnRspPkt{}
 		} else {
-			p = &cmpppacket.Cmpp2ConnRspPkt{}
+			p = &Cmpp2ConnRspPkt{}
 		}
-	case cmpppacket.CMPP_TERMINATE:
-		p = &cmpppacket.CmppTerminateReqPkt{}
-	case cmpppacket.CMPP_TERMINATE_RESP:
-		p = &cmpppacket.CmppTerminateRspPkt{}
-	case cmpppacket.CMPP_SUBMIT:
-		if c.Typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3SubmitReqPkt{}
+	case CMPP_TERMINATE:
+		p = &CmppTerminateReqPkt{}
+	case CMPP_TERMINATE_RESP:
+		p = &CmppTerminateRspPkt{}
+	case CMPP_SUBMIT:
+		if c.Typ == V30 {
+			p = &Cmpp3SubmitReqPkt{}
 		} else {
-			p = &cmpppacket.Cmpp2SubmitReqPkt{}
+			p = &Cmpp2SubmitReqPkt{}
 		}
-	case cmpppacket.CMPP_SUBMIT_RESP:
-		if c.Typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3SubmitRspPkt{}
+	case CMPP_SUBMIT_RESP:
+		if c.Typ == V30 {
+			p = &Cmpp3SubmitRspPkt{}
 		} else {
-			p = &cmpppacket.Cmpp2SubmitRspPkt{}
+			p = &Cmpp2SubmitRspPkt{}
 		}
-	case cmpppacket.CMPP_DELIVER:
-		if c.Typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3DeliverReqPkt{}
+	case CMPP_DELIVER:
+		if c.Typ == V30 {
+			p = &Cmpp3DeliverReqPkt{}
 		} else {
-			p = &cmpppacket.Cmpp2DeliverReqPkt{}
+			p = &Cmpp2DeliverReqPkt{}
 		}
-	case cmpppacket.CMPP_DELIVER_RESP:
-		if c.Typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3DeliverRspPkt{}
+	case CMPP_DELIVER_RESP:
+		if c.Typ == V30 {
+			p = &Cmpp3DeliverRspPkt{}
 		} else {
-			p = &cmpppacket.Cmpp2DeliverRspPkt{}
+			p = &Cmpp2DeliverRspPkt{}
 		}
-	case cmpppacket.CMPP_FWD:
-		if c.Typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3FwdReqPkt{}
+	case CMPP_FWD:
+		if c.Typ == V30 {
+			p = &Cmpp3FwdReqPkt{}
 		} else {
-			p = &cmpppacket.Cmpp2FwdReqPkt{}
+			p = &Cmpp2FwdReqPkt{}
 		}
-	case cmpppacket.CMPP_FWD_RESP:
-		if c.Typ == cmpppacket.V30 {
-			p = &cmpppacket.Cmpp3FwdRspPkt{}
+	case CMPP_FWD_RESP:
+		if c.Typ == V30 {
+			p = &Cmpp3FwdRspPkt{}
 		} else {
-			p = &cmpppacket.Cmpp2FwdRspPkt{}
+			p = &Cmpp2FwdRspPkt{}
 		}
-	case cmpppacket.CMPP_ACTIVE_TEST:
-		p = &cmpppacket.CmppActiveTestReqPkt{}
-	case cmpppacket.CMPP_ACTIVE_TEST_RESP:
-		p = &cmpppacket.CmppActiveTestRspPkt{}
+	case CMPP_ACTIVE_TEST:
+		p = &CmppActiveTestReqPkt{}
+	case CMPP_ACTIVE_TEST_RESP:
+		p = &CmppActiveTestRspPkt{}
 
 	default:
 		p = nil
-		return nil, cmpppacket.ErrCommandIdNotSupported
+		return nil, ErrCommandIdNotSupported
 	}
 
 	err = p.Unpack(leftData)

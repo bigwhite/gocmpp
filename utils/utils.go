@@ -42,24 +42,6 @@ func TimeStamp2Str(t uint32) string {
 	return fmt.Sprintf("%010d", t)
 }
 
-/*
-func Utf8ToUcs2(in string) (string, error) {
-	if !utf8.ValidString(in) {
-		return "", ErrInvalidUtf8Rune
-	}
-
-	buf := bytes.NewBuffer(make([]byte, 0, len(in)))
-	for _, r := range in {
-		var cp = uint16(r)
-		err := binary.Write(buf, binary.BigEndian, cp)
-		if err != nil {
-			return "", err
-		}
-	}
-	return string(buf.Bytes()), nil
-}
-*/
-
 func Utf8ToUcs2(in string) (string, error) {
 	if !utf8.ValidString(in) {
 		return "", ErrInvalidUtf8Rune

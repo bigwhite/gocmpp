@@ -11,44 +11,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmpppacket
+package cmpp
 
 import "encoding/binary"
 
-// Packet length const for cmpp terminate request and response packets.
+// Packet length const for cmpp active test request and response packets.
 const (
-	CmppTerminateReqPktLen uint32 = 12 //12d, 0xc
-	CmppTerminateRspPktLen uint32 = 12 //12d, 0xc
+	CmppActiveTestReqPktLen uint32 = 12     //12d, 0xc
+	CmppActiveTestRspPktLen uint32 = 12 + 1 //13d, 0xd
 )
 
-type CmppTerminateReqPkt struct {
+type CmppActiveTestReqPkt struct {
 	// session info
 	SeqId uint32
 }
-type CmppTerminateRspPkt struct {
+type CmppActiveTestRspPkt struct {
+	Reserved uint8
 	// session info
 	SeqId uint32
 }
 
-// Pack packs the CmppTerminateReqPkt to bytes stream for client side.
-func (p *CmppTerminateReqPkt) Pack(seqId uint32) ([]byte, error) {
-	var pktLen = CmppTerminateReqPktLen
+// Pack packs the CmppActiveTestReqPkt to bytes stream for client side.
+func (p *CmppActiveTestReqPkt) Pack(seqId uint32) ([]byte, error) {
+	var pktLen = CmppActiveTestReqPktLen
 
 	var w = newPacketWriter(pktLen)
 
 	// Pack header
 	w.WriteInt(binary.BigEndian, pktLen)
-	w.WriteInt(binary.BigEndian, CMPP_TERMINATE)
+	w.WriteInt(binary.BigEndian, CMPP_ACTIVE_TEST)
 	w.WriteInt(binary.BigEndian, seqId)
 	p.SeqId = seqId
 
 	return w.Bytes()
 }
 
-// Unpack unpack the binary byte stream to a CmppTerminateReqPkt variable.
+// Unpack unpack the binary byte stream to a CmppActiveTestReqPkt variable.
 // After unpack, you will get all value of fields in
-// CmppTerminateReqPkt struct.
-func (p *CmppTerminateReqPkt) Unpack(data []byte) error {
+// CmppActiveTestReqPkt struct.
+func (p *CmppActiveTestReqPkt) Unpack(data []byte) error {
 	var r = newPacketReader(data)
 
 	// Sequence Id
@@ -56,28 +57,30 @@ func (p *CmppTerminateReqPkt) Unpack(data []byte) error {
 	return r.Error()
 }
 
-// Pack packs the CmppTerminateRspPkt to bytes stream for client side.
-func (p *CmppTerminateRspPkt) Pack(seqId uint32) ([]byte, error) {
-	var pktLen = CmppTerminateRspPktLen
+// Pack packs the CmppActiveTestRspPkt to bytes stream for client side.
+func (p *CmppActiveTestRspPkt) Pack(seqId uint32) ([]byte, error) {
+	var pktLen = CmppActiveTestRspPktLen
 
 	var w = newPacketWriter(pktLen)
 
 	// Pack header
 	w.WriteInt(binary.BigEndian, pktLen)
-	w.WriteInt(binary.BigEndian, CMPP_TERMINATE_RESP)
+	w.WriteInt(binary.BigEndian, CMPP_ACTIVE_TEST_RESP)
 	w.WriteInt(binary.BigEndian, seqId)
+	w.WriteByte(p.Reserved)
 	p.SeqId = seqId
 
 	return w.Bytes()
 }
 
-// Unpack unpack the binary byte stream to a CmppTerminateRspPkt variable.
+// Unpack unpack the binary byte stream to a CmppActiveTestRspPkt variable.
 // After unpack, you will get all value of fields in
-// CmppTerminateRspPkt struct.
-func (p *CmppTerminateRspPkt) Unpack(data []byte) error {
+// CmppActiveTestRspPkt struct.
+func (p *CmppActiveTestRspPkt) Unpack(data []byte) error {
 	var r = newPacketReader(data)
 
 	// Sequence Id
 	r.ReadInt(binary.BigEndian, &p.SeqId)
+	p.Reserved = r.ReadByte()
 	return r.Error()
 }

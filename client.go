@@ -11,15 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmppclient
+package cmpp
 
 import (
 	"errors"
 	"net"
 	"time"
-
-	cmppconn "github.com/bigwhite/gocmpp/conn"
-	cmpppacket "github.com/bigwhite/gocmpp/packet"
 )
 
 var ErrNotCompleted = errors.New("data not being handled completed")
@@ -28,12 +25,12 @@ var ErrRespNotMatch = errors.New("the response is not matched with the request")
 // Client stands for one client-side instance, just like a session.
 // It may connect to the server, send & recv cmpp packets and terminate the connection.
 type Client struct {
-	conn *cmppconn.Conn
-	typ  cmpppacket.Type
+	conn *Conn
+	typ  Type
 }
 
 // New establishes a new cmpp client.
-func New(typ cmpppacket.Type) *Client {
+func NewClient(typ Type) *Client {
 	return &Client{
 		typ: typ,
 	}
@@ -47,16 +44,16 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 	if err != nil {
 		return err
 	}
-	cli.conn = cmppconn.New(conn, cli.typ)
+	cli.conn = NewConn(conn, cli.typ)
 	defer func() {
 		if err != nil {
 			cli.conn.Close()
 		}
 	}()
-	cli.conn.SetState(cmppconn.CONN_CONNECTED)
+	cli.conn.SetState(CONN_CONNECTED)
 
 	// Login to the server.
-	req := &cmpppacket.CmppConnReqPkt{
+	req := &CmppConnReqPkt{
 		SrcAddr: user,
 		Secret:  password,
 		Version: cli.typ,
@@ -74,13 +71,13 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 
 	var ok bool
 	var status uint8
-	if cli.typ == cmpppacket.V20 || cli.typ == cmpppacket.V21 {
-		var rsp *cmpppacket.Cmpp2ConnRspPkt
-		rsp, ok = p.(*cmpppacket.Cmpp2ConnRspPkt)
+	if cli.typ == V20 || cli.typ == V21 {
+		var rsp *Cmpp2ConnRspPkt
+		rsp, ok = p.(*Cmpp2ConnRspPkt)
 		status = rsp.Status
 	} else {
-		var rsp *cmpppacket.Cmpp3ConnRspPkt
-		rsp, ok = p.(*cmpppacket.Cmpp3ConnRspPkt)
+		var rsp *Cmpp3ConnRspPkt
+		rsp, ok = p.(*Cmpp3ConnRspPkt)
 		status = uint8(rsp.Status)
 	}
 
@@ -90,11 +87,11 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 	}
 
 	if status != 0 {
-		err = cmpppacket.ConnRspStatusErrMap[status]
+		err = ConnRspStatusErrMap[status]
 		return err
 	}
 
-	cli.conn.SetState(cmppconn.CONN_AUTHOK)
+	cli.conn.SetState(CONN_AUTHOK)
 	return nil
 }
 
@@ -103,12 +100,12 @@ func (cli *Client) Disconnect() {
 }
 
 // SendReqPkt pack the cmpp request packet structure and send it to the other peer.
-func (cli *Client) SendReqPkt(packet cmpppacket.Packer) error {
+func (cli *Client) SendReqPkt(packet Packer) error {
 	return cli.conn.SendPkt(packet, <-cli.conn.SeqId)
 }
 
 // SendRspPkt pack the cmpp response packet structure and send it to the other peer.
-func (cli *Client) SendRspPkt(packet cmpppacket.Packer, seqId uint32) error {
+func (cli *Client) SendRspPkt(packet Packer, seqId uint32) error {
 	return cli.conn.SendPkt(packet, seqId)
 }
 

@@ -7,8 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/bigwhite/gocmpp/packet"
-	cmppserver "github.com/bigwhite/gocmpp/server"
+	"github.com/bigwhite/gocmpp"
 )
 
 const (
@@ -16,24 +15,24 @@ const (
 	passwordS string = "888888"
 )
 
-func handleLogin(r *cmppserver.Response, p *cmppserver.Packet, l *log.Logger) (bool, error) {
-	req, ok := p.Packer.(*cmpppacket.CmppConnReqPkt)
+func handleLogin(r *cmpp.Response, p *cmpp.Packet, l *log.Logger) (bool, error) {
+	req, ok := p.Packer.(*cmpp.CmppConnReqPkt)
 	if !ok {
 		// not a connect request, ignore it,
 		// go on to next handler
 		return true, nil
 	}
 
-	resp := r.Packer.(*cmpppacket.Cmpp3ConnRspPkt)
+	resp := r.Packer.(*cmpp.Cmpp3ConnRspPkt)
 
 	// validate the user and password
 	// set the status in the connect response.
 	resp.Version = 0x30
 	addr := req.SrcAddr
 	if addr != userS {
-		l.Println("handleLogin error:", cmpppacket.ConnRspStatusErrMap[cmpppacket.ErrnoConnInvalidSrcAddr])
-		resp.Status = uint32(cmpppacket.ErrnoConnInvalidSrcAddr)
-		return false, cmpppacket.ConnRspStatusErrMap[cmpppacket.ErrnoConnInvalidSrcAddr]
+		l.Println("handleLogin error:", cmpp.ConnRspStatusErrMap[cmpp.ErrnoConnInvalidSrcAddr])
+		resp.Status = uint32(cmpp.ErrnoConnInvalidSrcAddr)
+		return false, cmpp.ConnRspStatusErrMap[cmpp.ErrnoConnInvalidSrcAddr]
 	}
 
 	tm := req.Timestamp
@@ -44,9 +43,9 @@ func handleLogin(r *cmppserver.Response, p *cmppserver.Packet, l *log.Logger) (b
 		nil))
 
 	if req.AuthSrc != string(authSrc[:]) {
-		l.Println("handleLogin error: ", cmpppacket.ConnRspStatusErrMap[cmpppacket.ErrnoConnAuthFailed])
-		resp.Status = uint32(cmpppacket.ErrnoConnAuthFailed)
-		return false, cmpppacket.ConnRspStatusErrMap[cmpppacket.ErrnoConnAuthFailed]
+		l.Println("handleLogin error: ", cmpp.ConnRspStatusErrMap[cmpp.ErrnoConnAuthFailed])
+		resp.Status = uint32(cmpp.ErrnoConnAuthFailed)
+		return false, cmpp.ConnRspStatusErrMap[cmpp.ErrnoConnAuthFailed]
 	}
 
 	authIsmg := md5.Sum(bytes.Join([][]byte{[]byte{byte(resp.Status)},
@@ -59,13 +58,13 @@ func handleLogin(r *cmppserver.Response, p *cmppserver.Packet, l *log.Logger) (b
 	return false, nil
 }
 
-func handleSubmit(r *cmppserver.Response, p *cmppserver.Packet, l *log.Logger) (bool, error) {
-	req, ok := p.Packer.(*cmpppacket.Cmpp3SubmitReqPkt)
+func handleSubmit(r *cmpp.Response, p *cmpp.Packet, l *log.Logger) (bool, error) {
+	req, ok := p.Packer.(*cmpp.Cmpp3SubmitReqPkt)
 	if !ok {
 		return true, nil // go on to next handler
 	}
 
-	resp := r.Packer.(*cmpppacket.Cmpp3SubmitRspPkt)
+	resp := r.Packer.(*cmpp.Cmpp3SubmitRspPkt)
 	resp.MsgId = 12878564852733378560 //0xb2, 0xb9, 0xda, 0x80, 0x00, 0x01, 0x00, 0x00
 	for i, d := range req.DestTerminalId {
 		l.Printf("handleSubmit: handle submit from %s ok! msgid[%d], srcId[%s], destTerminalId[%s]\n",
@@ -75,13 +74,13 @@ func handleSubmit(r *cmppserver.Response, p *cmppserver.Packet, l *log.Logger) (
 }
 
 func main() {
-	var handlers = []cmppserver.Handler{
-		cmppserver.HandlerFunc(handleLogin),
-		cmppserver.HandlerFunc(handleSubmit),
+	var handlers = []cmpp.Handler{
+		cmpp.HandlerFunc(handleLogin),
+		cmpp.HandlerFunc(handleSubmit),
 	}
 
-	err := cmppserver.ListenAndServe(":8888",
-		cmpppacket.V30,
+	err := cmpp.ListenAndServe(":8888",
+		cmpp.V30,
 		5*time.Second,
 		3,
 		nil,

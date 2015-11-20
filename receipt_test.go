@@ -11,16 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmpppacket_test
+package cmpp_test
 
 import (
 	"testing"
 
-	"github.com/bigwhite/gocmpp/packet"
+	"github.com/bigwhite/gocmpp"
 )
 
 func TestCmppReceiptPktPack(t *testing.T) {
-	p := &cmpppacket.CmppReceiptPkt{
+	p := &cmpp.CmppReceiptPkt{
 		MsgId:          13025908756704198656,
 		Stat:           "DELIVRD",
 		SubmitTime:     "1511120955",
@@ -62,7 +62,7 @@ func TestCmppReceiptPktUnpack(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34, 0x56, 0x78,
 	}
 
-	p := &cmpppacket.CmppReceiptPkt{}
+	p := &cmpp.CmppReceiptPkt{}
 	err := p.Unpack(data)
 	if err != nil {
 		t.Fatal("CmppReceiptPkt unpack error:", err)

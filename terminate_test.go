@@ -11,16 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmpppacket_test
+package cmpp_test
 
 import (
 	"testing"
 
-	cmpppacket "github.com/bigwhite/gocmpp/packet"
+	"github.com/bigwhite/gocmpp"
 )
 
 func TestCmppTerminateReqPktPack(t *testing.T) {
-	p := &cmpppacket.CmppTerminateReqPkt{}
+	p := &cmpp.CmppTerminateReqPkt{}
 
 	data, err := p.Pack(seqId)
 	if err != nil {
@@ -55,7 +55,7 @@ func TestCmppTerminateReqUnpack(t *testing.T) {
 		0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x17,
 	}
 
-	p := &cmpppacket.CmppTerminateReqPkt{}
+	p := &cmpp.CmppTerminateReqPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("CmppTerminateReqPkt unpack error:", err)
@@ -67,7 +67,7 @@ func TestCmppTerminateReqUnpack(t *testing.T) {
 }
 
 func TestCmppTerminateRspPktPack(t *testing.T) {
-	p := &cmpppacket.CmppTerminateRspPkt{}
+	p := &cmpp.CmppTerminateRspPkt{}
 
 	data, err := p.Pack(seqId)
 	if err != nil {
@@ -102,7 +102,7 @@ func TestCmppTerminateRspUnpack(t *testing.T) {
 		0x00, 0x00, 0x00, 0x0c, 0x80, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x17,
 	}
 
-	p := &cmpppacket.CmppTerminateRspPkt{}
+	p := &cmpp.CmppTerminateRspPkt{}
 	err := p.Unpack(data[8:])
 	if err != nil {
 		t.Fatal("CmppTerminateRspPkt unpack error:", err)
