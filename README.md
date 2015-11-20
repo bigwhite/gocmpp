@@ -30,15 +30,16 @@ gocmpp's build use the vendor mechanism introduced in go 1.5, so we need go 1.5 
 $export GO15VENDOREXPERIMENT="1"
 $cd $GOPATH/src/github.com/bigwhite/gocmpp
 $make
-go build -o ./examples/server/server ./examples/server/server.go
-go build -o ./examples/client/client ./examples/client/client.go
-go build ./client ./server ./utils ./packet ./conn
-go test ./client ./server ./utils ./packet ./conn
-?   	github.com/bigwhite/gocmpp/client	[no test files]
-?   	github.com/bigwhite/gocmpp/server	[no test files]
-ok  	github.com/bigwhite/gocmpp/utils	0.013s
-ok  	github.com/bigwhite/gocmpp/packet	0.009s
-ok  	github.com/bigwhite/gocmpp/conn	0.010s
+$make
+go build -o examples/server/server examples/server/server.go
+go build -o examples/client/client examples/client/client.go
+go build
+go build ./utils
+go test
+PASS
+ok  	github.com/bigwhite/gocmpp	0.009s
+go test ./utils
+ok  	github.com/bigwhite/gocmpp/utils	0.008s
 ```
 
 ###3. Run the examples
