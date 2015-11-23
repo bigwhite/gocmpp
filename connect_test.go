@@ -275,3 +275,30 @@ func TestCmpp3ConnRspUnpack(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkCmppConnReqPktPack(b *testing.B) {
+	var p = &cmpp.CmppConnReqPkt{
+		SrcAddr:   connSourceAddr,
+		Version:   connVersion,
+		Secret:    connSecret,
+		Timestamp: connTimestamp,
+	}
+
+	for i := 0; i < b.N; i++ {
+		p.Pack(seqId)
+	}
+}
+
+func BenchmarkCmppConnReqPktUnpack(b *testing.B) {
+	data := []byte{
+		0x00, 0x00, 0x00, 0x17, 0x39, 0x30, 0x30, 0x30,
+		0x30, 0x31, 0x90, 0xd0, 0x0c, 0x1d, 0x51, 0x7a, 0xbd, 0x0b, 0x4f, 0x65, 0xf6, 0xbc, 0xf8, 0x53,
+		0x5d, 0x16, 0x21, 0x3c, 0xdc, 0x73, 0xbe,
+	}
+
+	p := &cmpp.CmppConnReqPkt{}
+
+	for i := 0; i < b.N; i++ {
+		p.Unpack(data)
+	}
+}
