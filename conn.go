@@ -18,6 +18,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -115,6 +116,24 @@ func (c *Conn) SendPkt(packet Packer, seqId uint32) error {
 	return nil
 }
 
+const (
+	defaultReadBufferSize = 4096
+)
+
+// readBuffer is used to optimize the performance of
+// RecvAndUnpackPkt.
+type readBuffer struct {
+	totalLen  uint32
+	commandId CommandId
+	leftData  [defaultReadBufferSize]byte
+}
+
+var readBufferPool = sync.Pool{
+	New: func() interface{} {
+		return &readBuffer{}
+	},
+}
+
 // RecvAndUnpackPkt receives cmpp byte stream, and unpack it to some cmpp packet structure.
 func (c *Conn) RecvAndUnpackPkt(timeout time.Duration) (interface{}, error) {
 	if c.State == CONN_CLOSED {
@@ -127,46 +146,47 @@ func (c *Conn) RecvAndUnpackPkt(timeout time.Duration) (interface{}, error) {
 		defer c.SetReadDeadline(noDeadline)
 	}
 
+	rb := readBufferPool.Get().(*readBuffer)
+	defer readBufferPool.Put(rb)
+
 	// Total_Length in packet
-	var totalLen uint32
-	err := binary.Read(c.Conn, binary.BigEndian, &totalLen)
+	err := binary.Read(c.Conn, binary.BigEndian, &rb.totalLen)
 	if err != nil {
 		return nil, err
 	}
 
 	if c.Typ == V30 {
-		if totalLen < CMPP3_PACKET_MIN || totalLen > CMPP3_PACKET_MAX {
+		if rb.totalLen < CMPP3_PACKET_MIN || rb.totalLen > CMPP3_PACKET_MAX {
 			return nil, ErrTotalLengthInvalid
 		}
 	}
 
 	if c.Typ == V21 || c.Typ == V20 {
-		if totalLen < CMPP2_PACKET_MIN || totalLen > CMPP2_PACKET_MAX {
+		if rb.totalLen < CMPP2_PACKET_MIN || rb.totalLen > CMPP2_PACKET_MAX {
 			return nil, ErrTotalLengthInvalid
 		}
 	}
 
 	// Command_Id
-	var commandId CommandId
-	err = binary.Read(c.Conn, binary.BigEndian, &commandId)
+	err = binary.Read(c.Conn, binary.BigEndian, &rb.commandId)
 	if err != nil {
 		return nil, err
 	}
 
-	if !((commandId > CMPP_REQUEST_MIN && commandId < CMPP_REQUEST_MAX) ||
-		(commandId > CMPP_RESPONSE_MIN && commandId < CMPP_RESPONSE_MAX)) {
+	if !((rb.commandId > CMPP_REQUEST_MIN && rb.commandId < CMPP_REQUEST_MAX) ||
+		(rb.commandId > CMPP_RESPONSE_MIN && rb.commandId < CMPP_RESPONSE_MAX)) {
 		return nil, ErrCommandIdInvalid
 	}
 
 	// The left packet data (start from seqId in header).
-	var leftData = make([]byte, totalLen-8)
+	var leftData = rb.leftData[0:(rb.totalLen - 8)]
 	_, err = io.ReadFull(c.Conn, leftData)
 	if err != nil {
 		return nil, err
 	}
 
 	var p Packer
-	switch commandId {
+	switch rb.commandId {
 	case CMPP_CONNECT:
 		p = &CmppConnReqPkt{}
 	case CMPP_CONNECT_RESP:
