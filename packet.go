@@ -277,9 +277,12 @@ func (w *packetWriter) WriteInt(order binary.ByteOrder, data interface{}) {
 	}
 }
 
+const maxCStringSize = 160
+
 type packetReader struct {
-	rb  *bytes.Buffer
-	err *OpError
+	rb   *bytes.Buffer
+	err  *OpError
+	cbuf [maxCStringSize]byte
 }
 
 func newPacketReader(data []byte) *packetReader {
@@ -350,7 +353,7 @@ func (r *packetReader) ReadCString(length int) []byte {
 		return nil
 	}
 
-	var tmp = make([]byte, length)
+	var tmp = r.cbuf[:length]
 	n, err := r.rb.Read(tmp)
 	if err != nil {
 		r.err = NewOpError(err,
