@@ -49,7 +49,7 @@ func (c *fakeConn) Read(b []byte) (n int, err error) {
 	n, err = c.reader.Read(b)
 	if err == io.EOF {
 		c.reader = bytes.NewBuffer(data)
-		return c.reader.Read(b)
+		n, err = c.reader.Read(b)
 	}
 	return
 }
