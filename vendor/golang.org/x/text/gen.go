@@ -69,14 +69,14 @@ func main() {
 		}
 	}
 	var (
-		cldr     = generate("cldr")
+		cldr     = generate("unicode/cldr")
 		language = generate("language", cldr)
 		internal = generate("internal", language)
 		norm     = generate("unicode/norm")
 		_        = generate("unicode/rangetable")
 		_        = generate("width")
 		_        = generate("currency", cldr, language, internal)
-		_        = generate("display", cldr, language)
+		_        = generate("language/display", cldr, language)
 		_        = generate("cases", norm)
 		_        = generate("collate", norm, cldr, language)
 		_        = generate("search", norm, cldr, language)

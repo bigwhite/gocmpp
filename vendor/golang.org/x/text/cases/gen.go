@@ -32,7 +32,7 @@ func main() {
 	gen.Init()
 	genTables()
 	genTablesTest()
-	genTrieval()
+	gen.Repackage("gen_trieval.go", "trieval.go", "cases")
 }
 
 // runeInfo contains all information for a rune that we care about for casing
@@ -90,22 +90,8 @@ func (r *runeInfo) mapping(c info) string {
 	return string(r.Rune)
 }
 
-// ucdParser is a parser for UCD files.
-type ucdParser []ucd.Option
-
-func parser(opts ...ucd.Option) ucdParser { return ucdParser(opts) }
-
-// parse calls f for each entry in the given UCD file.
-func (opts ucdParser) parse(filename string, f func(p *ucd.Parser)) {
-	r := gen.OpenUCDFile(filename)
-	defer r.Close()
-	p := ucd.New(r, opts...)
-	for p.Next() {
-		f(p)
-	}
-	if err := p.Err(); err != nil {
-		log.Fatal(err)
-	}
+func parse(file string, f func(p *ucd.Parser)) {
+	ucd.Parse(gen.OpenUCDFile(file), f)
 }
 
 func parseUCD() []runeInfo {
@@ -117,7 +103,7 @@ func parseUCD() []runeInfo {
 		return c
 	}
 
-	parser().parse("UnicodeData.txt", func(p *ucd.Parser) {
+	parse("UnicodeData.txt", func(p *ucd.Parser) {
 		ri := get(p.Rune(0))
 		ri.CCC = byte(p.Int(ucd.CanonicalCombiningClass))
 		ri.Simple[cLower] = p.Runes(ucd.SimpleLowercaseMapping)
@@ -129,14 +115,14 @@ func parseUCD() []runeInfo {
 	})
 
 	// <code>; <property>
-	parser().parse("PropList.txt", func(p *ucd.Parser) {
+	parse("PropList.txt", func(p *ucd.Parser) {
 		if p.String(1) == "Soft_Dotted" {
 			chars[p.Rune(0)].SoftDotted = true
 		}
 	})
 
 	// <code>; <word break type>
-	parser().parse("DerivedCoreProperties.txt", func(p *ucd.Parser) {
+	parse("DerivedCoreProperties.txt", func(p *ucd.Parser) {
 		ri := get(p.Rune(0))
 		switch p.String(1) {
 		case "Case_Ignorable":
@@ -151,7 +137,7 @@ func parseUCD() []runeInfo {
 	})
 
 	// <code>; <lower> ; <title> ; <upper> ; (<condition_list> ;)?
-	parser().parse("SpecialCasing.txt", func(p *ucd.Parser) {
+	parse("SpecialCasing.txt", func(p *ucd.Parser) {
 		// We drop all conditional special casing and deal with them manually in
 		// the language-specific case mappers. Rune 0x03A3 is the only one with
 		// a conditional formatting that is not language-specific. However,
@@ -170,7 +156,7 @@ func parseUCD() []runeInfo {
 
 	// TODO: Use text breaking according to UAX #29.
 	// <code>; <word break type>
-	parser().parse("auxiliary/WordBreakProperty.txt", func(p *ucd.Parser) {
+	parse("auxiliary/WordBreakProperty.txt", func(p *ucd.Parser) {
 		ri := get(p.Rune(0))
 		ri.BreakType = p.String(1)
 
@@ -185,7 +171,7 @@ func parseUCD() []runeInfo {
 
 	// TODO: Support case folding.
 	// // <code>; <status>; <mapping>;
-	// parser().parse("CaseFolding.txt", func (p *ucd.Parser) {
+	// parse("CaseFolding.txt", func (p *ucd.Parser) {
 	// 	ri := get(p.Rune(0))
 	// 	switch p.String(1) {
 	// 	case "C":
@@ -647,7 +633,7 @@ func genTablesTest() {
 
 	// <code>; <lower> ; <title> ; <upper> ; (<condition_list> ;)?
 	fmt.Fprintln(w, "\tspecial = map[rune]struct{ toLower, toTitle, toUpper string }{")
-	parser().parse("SpecialCasing.txt", func(p *ucd.Parser) {
+	parse("SpecialCasing.txt", func(p *ucd.Parser) {
 		// Skip conditional entries.
 		if p.String(4) != "" {
 			return
@@ -660,7 +646,7 @@ func genTablesTest() {
 
 	// Break property
 	notBreak := map[rune]bool{}
-	parser().parse("auxiliary/WordBreakProperty.txt", func(p *ucd.Parser) {
+	parse("auxiliary/WordBreakProperty.txt", func(p *ucd.Parser) {
 		switch p.String(1) {
 		case "Extend", "Format", "MidLetter", "MidNumLet", "Single_Quote",
 			"ALetter", "Hebrew_Letter", "Numeric", "ExtendNumLet":
@@ -688,14 +674,14 @@ func genTablesTest() {
 	// Word break test
 	// Filter out all samples that do not contain cased characters.
 	cased := map[rune]bool{}
-	parser().parse("DerivedCoreProperties.txt", func(p *ucd.Parser) {
+	parse("DerivedCoreProperties.txt", func(p *ucd.Parser) {
 		if p.String(1) == "Cased" {
 			cased[p.Rune(0)] = true
 		}
 	})
 
 	fmt.Fprintln(w, "\tbreakTest = []string{")
-	parser(ucd.KeepRanges).parse("auxiliary/WordBreakTest.txt", func(p *ucd.Parser) {
+	parse("auxiliary/WordBreakTest.txt", func(p *ucd.Parser) {
 		c := strings.Split(p.String(0), " ")
 
 		const sep = '|'
@@ -771,7 +757,7 @@ func printProperties(w io.Writer, file, property string, f func(r rune) bool) in
 	varNameParts := strings.Split(property, "_")
 	varNameParts[0] = strings.ToLower(varNameParts[0])
 	fmt.Fprintf(w, "\t%s = map[rune]bool{\n", strings.Join(varNameParts, ""))
-	parser().parse(file, func(p *ucd.Parser) {
+	parse(file, func(p *ucd.Parser) {
 		if p.String(1) == property {
 			r := p.Rune(0)
 			verify[r] = true
@@ -790,21 +776,6 @@ func printProperties(w io.Writer, file, property string, f func(r rune) bool) in
 		}
 	}
 	return n
-}
-
-func genTrieval() {
-	src, err := ioutil.ReadFile("gen_trieval.go")
-	if err != nil {
-		log.Fatalf("reading gen_trieval.go: %v", err)
-	}
-	const toDelete = "// +build ignore\n\npackage main\n\n"
-	i := bytes.Index(src, []byte(toDelete))
-	if i < 0 {
-		log.Fatalf("could not find %q in gen_trieval.go", toDelete)
-	}
-	w := &bytes.Buffer{}
-	w.Write(src[i+len(toDelete):])
-	gen.WriteGoFile("trieval.go", "cases", w.Bytes())
 }
 
 // The newCaseTrie, sparseValues and sparseOffsets definitions below are

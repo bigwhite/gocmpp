@@ -13,10 +13,14 @@
 
 // +build gofuzz
 
-package cmpp
+package cmppfuzz
+
+import (
+	"github.com/bigwhite/gocmpp"
+)
 
 func Fuzz(data []byte) int {
-	p := &Cmpp2SubmitReqPkt{}
+	p := &cmpp.Cmpp2SubmitReqPkt{}
 	if err := p.Unpack(data); err != nil {
 		return 0
 	}
