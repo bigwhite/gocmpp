@@ -3,11 +3,11 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
-	"fmt"
 	"log"
 	"time"
 
 	"github.com/bigwhite/gocmpp"
+	"github.com/bigwhite/gocmpp/utils"
 )
 
 const (
@@ -39,7 +39,7 @@ func handleLogin(r *cmpp.Response, p *cmpp.Packet, l *log.Logger) (bool, error) 
 	authSrc := md5.Sum(bytes.Join([][]byte{[]byte(userS),
 		make([]byte, 9),
 		[]byte(passwordS),
-		[]byte(fmt.Sprintf("%d", tm))},
+		[]byte(cmpputils.TimeStamp2Str(tm))},
 		nil))
 
 	if req.AuthSrc != string(authSrc[:]) {
