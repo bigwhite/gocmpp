@@ -43,7 +43,7 @@ var (
 		ErrnoConnInvalidStruct:  errConnInvalidStruct,
 		ErrnoConnInvalidSrcAddr: errConnInvalidSrcAddr,
 		ErrnoConnAuthFailed:     errConnAuthFailed,
-		ErrnoConnAuthFailed:     errConnVerTooHigh,
+		ErrnoConnVerTooHigh:     errConnVerTooHigh,
 		ErrnoConnOthers:         errConnOthers,
 	}
 
