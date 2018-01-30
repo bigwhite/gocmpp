@@ -47,7 +47,9 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 	cli.conn = NewConn(conn, cli.typ)
 	defer func() {
 		if err != nil {
-			cli.conn.Close()
+			if cli.conn != nil {
+				cli.conn.Close()
+			}
 		}
 	}()
 	cli.conn.SetState(CONN_CONNECTED)
@@ -96,7 +98,9 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 }
 
 func (cli *Client) Disconnect() {
-	cli.conn.Close()
+	if cli.conn != nil {
+		cli.conn.Close()
+	}
 }
 
 // SendReqPkt pack the cmpp request packet structure and send it to the other peer.
