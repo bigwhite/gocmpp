@@ -61,7 +61,7 @@ func startAClient(idx int) {
 				MsgContent:         cont,
 			}
 
-			err = c.SendReqPkt(p)
+			_, err = c.SendReqPkt(p)
 			if err != nil {
 				log.Printf("client %d: send a cmpp3 submit request error: %s.", idx, err)
 			} else {

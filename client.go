@@ -61,7 +61,7 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 		Version: cli.typ,
 	}
 
-	err = cli.SendReqPkt(req)
+	_, err = cli.SendReqPkt(req)
 	if err != nil {
 		return err
 	}
@@ -104,8 +104,9 @@ func (cli *Client) Disconnect() {
 }
 
 // SendReqPkt pack the cmpp request packet structure and send it to the other peer.
-func (cli *Client) SendReqPkt(packet Packer) error {
-	return cli.conn.SendPkt(packet, <-cli.conn.SeqId)
+func (cli *Client) SendReqPkt(packet Packer) (uint32, error) {
+	seq := <-cli.conn.SeqId
+	return seq, cli.conn.SendPkt(packet, seq)
 }
 
 // SendRspPkt pack the cmpp response packet structure and send it to the other peer.
