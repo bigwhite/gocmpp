@@ -66,7 +66,7 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 		return err
 	}
 
-	p, err := cli.conn.RecvAndUnpackPkt(0)
+	p, err := cli.conn.RecvAndUnpackPkt(timeout)
 	if err != nil {
 		return err
 	}
