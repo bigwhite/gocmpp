@@ -33,7 +33,7 @@ func TestCmpp3DeliverReqPktPack(t *testing.T) {
 
 	data, err := p.Pack(0x1)
 	if err != nil {
-		t.Fatal("Cmpp2FwdReqPkt pack error:", err)
+		t.Fatal("Cmpp2DeliverReqPkt pack error:", err)
 	}
 
 	if p.SeqId != 0x1 {
@@ -119,7 +119,7 @@ func TestCmpp3DeliverRspPktPack(t *testing.T) {
 
 	data, err := p.Pack(0x1)
 	if err != nil {
-		t.Fatal("Cmpp2FwdRspPkt pack error:", err)
+		t.Fatal("Cmpp2DeliverRspPkt pack error:", err)
 	}
 
 	if p.SeqId != 0x1 {
@@ -183,7 +183,7 @@ func TestCmpp2DeliverReqPktPack(t *testing.T) {
 
 	data, err := p.Pack(0x5)
 	if err != nil {
-		t.Fatal("Cmpp2FwdReqPkt pack error:", err)
+		t.Fatal("Cmpp2DeliverReqPkt pack error:", err)
 	}
 
 	if p.SeqId != 0x5 {
@@ -263,7 +263,7 @@ func TestCmpp2DeliverRspPktPack(t *testing.T) {
 
 	data, err := p.Pack(0x5)
 	if err != nil {
-		t.Fatal("Cmpp2FwdRspPkt pack error:", err)
+		t.Fatal("Cmpp2DeliverRspPkt pack error:", err)
 	}
 
 	if p.SeqId != 0x5 {
