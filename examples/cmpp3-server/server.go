@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"crypto/md5"
 	"log"
+	"net"
 	"time"
 
-	"github.com/bigwhite/gocmpp"
+	cmpp "github.com/bigwhite/gocmpp"
 	"github.com/bigwhite/gocmpp/utils"
 )
 
@@ -23,6 +24,7 @@ func handleLogin(r *cmpp.Response, p *cmpp.Packet, l *log.Logger) (bool, error) 
 		return true, nil
 	}
 
+	l.Println("remote addr:", p.Conn.Conn.RemoteAddr().(*net.TCPAddr).IP.String())
 	resp := r.Packer.(*cmpp.Cmpp3ConnRspPkt)
 
 	// validate the user and password
