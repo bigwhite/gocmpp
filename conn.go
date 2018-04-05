@@ -26,7 +26,9 @@ type State uint8
 
 // Errors for conn operations
 var (
-	ErrConnIsClosed = errors.New("connection is closed")
+	ErrConnIsClosed       = errors.New("connection is closed")
+	ErrReadCmdIDTimeout   = errors.New("read commandId timeout")
+	ErrReadPktBodyTimeout = errors.New("read packet body timeout")
 )
 
 var noDeadline = time.Time{}
@@ -171,6 +173,12 @@ func (c *Conn) RecvAndUnpackPkt(timeout time.Duration) (interface{}, error) {
 	}
 	err = binary.Read(c.Conn, binary.BigEndian, &rb.commandId)
 	if err != nil {
+		netErr, ok := err.(net.Error)
+		if ok {
+			if netErr.Timeout() {
+				return nil, ErrReadCmdIDTimeout
+			}
+		}
 		return nil, err
 	}
 
@@ -186,6 +194,12 @@ func (c *Conn) RecvAndUnpackPkt(timeout time.Duration) (interface{}, error) {
 	var leftData = rb.leftData[0:(rb.totalLen - 8)]
 	_, err = io.ReadFull(c.Conn, leftData)
 	if err != nil {
+		netErr, ok := err.(net.Error)
+		if ok {
+			if netErr.Timeout() {
+				return nil, ErrReadPktBodyTimeout
+			}
+		}
 		return nil, err
 	}
 
