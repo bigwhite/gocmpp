@@ -88,5 +88,5 @@ The best start entry is the code in folder '[examples](https://github.com/bigwhi
  * client.go tells you how to use gocmpp in client side.
  * server.go presents you how to construct a cmpp server in gocmpp.
  
-## Friend links
+## Who use gocmpp
 * [smspush platform](https://51smspush.com)
