@@ -18,6 +18,7 @@ import (
 	"io"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/bigwhite/gocmpp"
 )
@@ -52,6 +53,10 @@ func (c *fakeConn) Read(b []byte) (n int, err error) {
 		n, err = c.reader.Read(b)
 	}
 	return
+}
+
+func (c *fakeConn) SetReadDeadline(t time.Time) error {
+	return nil
 }
 
 func BenchmarkRecvAndUnpackPkt(b *testing.B) {
