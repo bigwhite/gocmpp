@@ -17,12 +17,12 @@ gocmpp has covered cmpp2.x and cmpp3.x versions. It has supported the connect, s
 
 ## QuickStart
 
-###1. Download gocmpp
+### 1. Download gocmpp
 ```
 $go get github.com/bigwhite/gocmpp
 ```
 
-###2. Build gocmpp
+### 2. Build gocmpp
 
 gocmpp's build use the vendor mechanism introduced in go 1.5, so we need go 1.5 or later version to build it.
 
@@ -42,7 +42,7 @@ go test ./utils
 ok  	github.com/bigwhite/gocmpp/utils	0.008s
 ```
 
-###3. Run the examples
+### 3. Run the examples
 
 run the two programs below in order:
  * ./examples/server/server
@@ -83,7 +83,7 @@ client:
 2015/11/19 16:29:10 send a cmpp3 submit request
 2015/11/19 16:29:10 receive a cmpp3 submit response: &{12878564852733378560 0 3}
 ```
-###4.How to use the library
+### 4.How to use the library
 The best start entry is the code in folder '[examples](https://github.com/bigwhite/gocmpp/tree/master/examples)'. 
  * client.go tells you how to use gocmpp in client side.
  * server.go presents you how to construct a cmpp server in gocmpp.
