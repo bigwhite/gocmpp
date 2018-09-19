@@ -89,7 +89,11 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 	}
 
 	if status != 0 {
-		err = ConnRspStatusErrMap[status]
+		if status <= ErrnoConnOthers { //ErrnoConnOthers = 5
+			err = ConnRspStatusErrMap[status]
+		} else {
+			err = ConnRspStatusErrMap[ErrnoConnOthers]
+		}
 		return err
 	}
 
