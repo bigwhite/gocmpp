@@ -332,7 +332,7 @@ func (c *conn) close() {
 }
 
 func (c *conn) finishPacket(r *Response) error {
-	if _, ok := r.Packer.(*CmppActiveTestRspPkt); ok {
+	if _, ok := r.Packet.Packer.(*CmppActiveTestRspPkt); ok {
 		atomic.AddInt32(&c.counter, -1)
 		return nil
 	}
