@@ -59,7 +59,7 @@ type Handler interface {
 // after sending back the corresponding response.
 type HandlerFunc func(*Response, *Packet, *log.Logger) (bool, error)
 
-// ServeHTTP calls f(r, p).
+// ServeCmpp calls f(r, p).
 func (f HandlerFunc) ServeCmpp(r *Response, p *Packet, l *log.Logger) (bool, error) {
 	return f(r, p, l)
 }
