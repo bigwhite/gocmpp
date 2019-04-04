@@ -1,2 +1,4 @@
+github.com/dvyukov/go-fuzz v0.0.0-20190402070214-9cfa592d5792 h1:UJcJo+Ja8EnbMijmxI/i4fF9R2YrdK1TAPH8zNgJRSk=
+github.com/dvyukov/go-fuzz v0.0.0-20190402070214-9cfa592d5792/go.mod h1:11Gm+ccJnvAhCNLlf5+cS9KjtbaD5I5zaZpFMsTHWTw=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
