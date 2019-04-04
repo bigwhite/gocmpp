@@ -76,16 +76,19 @@ func (cli *Client) Connect(servAddr, user, password string, timeout time.Duratio
 	if cli.typ == V20 || cli.typ == V21 {
 		var rsp *Cmpp2ConnRspPkt
 		rsp, ok = p.(*Cmpp2ConnRspPkt)
+		if !ok {
+			err = ErrRespNotMatch
+			return err
+		}
 		status = rsp.Status
 	} else {
 		var rsp *Cmpp3ConnRspPkt
 		rsp, ok = p.(*Cmpp3ConnRspPkt)
+		if !ok {
+			err = ErrRespNotMatch
+			return err
+		}
 		status = uint8(rsp.Status)
-	}
-
-	if !ok {
-		err = ErrRespNotMatch
-		return err
 	}
 
 	if status != 0 {
