@@ -198,7 +198,7 @@ func (w *packetWriter) Bytes() ([]byte, error) {
 	return (w.wb.Bytes())[:len], nil
 }
 
-// WriteInt appends the byte of b to the inner buffer, growing the buffer as
+// WriteByte appends the byte of b to the inner buffer, growing the buffer as
 // needed.
 func (w *packetWriter) WriteByte(b byte) {
 	if w.err != nil {
@@ -307,7 +307,7 @@ func (r *packetReader) ReadByte() byte {
 	return b
 }
 
-// Read reads structured binary data from r into data.
+// ReadInt reads reads structured binary data from r into data.
 // Data must be a pointer to a fixed-size value or a slice
 // of fixed-size values.
 // Bytes read from r are decoded using the specified byte order
