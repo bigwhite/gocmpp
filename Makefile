@@ -1,7 +1,7 @@
-all: examples build test 
+all: examples build test
 
 build:
-	go build 
+	go build
 	go build ./utils
 
 test:
@@ -10,10 +10,10 @@ test:
 
 examples: ./examples/server/server ./examples/client/client
 
-./examples/server/server: ./examples/server/server.go
+./examples/server/server: ./examples/cmpp3-server/server.go
 	go build -o $@ $^
 
-./examples/client/client: ./examples/client/client.go
+./examples/client/client: ./examples/cmpp3-client/client.go
 	go build -o $@ $^
 
 
