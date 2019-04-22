@@ -8,14 +8,16 @@ test:
 	go test
 	go test ./utils
 
-examples: ./examples/server/server ./examples/client/client
+examples: ./examples/cmpp3-server/server ./examples/cmpp2-client/client ./examples/cmpp3-client/client
 
-./examples/server/server: ./examples/server/server.go
+./examples/cmpp3-server/server: ./examples/cmpp3-server/server.go
 	go build -o $@ $^
 
-./examples/client/client: ./examples/client/client.go
+./examples/cmpp2-client/client: ./examples/cmpp2-client/client.go
 	go build -o $@ $^
 
+./examples/cmpp3-client/client: ./examples/cmpp3-client/client.go
+	go build -o $@ $^
 
 clean:
 	go clean ./...
