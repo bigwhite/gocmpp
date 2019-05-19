@@ -106,7 +106,7 @@ func startAClient(idx int) {
 				break
 			}
 		case *cmpp.CmppTerminateRspPkt:
-			log.Printf("client %d: receive a cmpp terminate response: %v.", p)
+			log.Printf("client %d: receive a cmpp terminate response: %v.", idx, p)
 		}
 	}
 }
