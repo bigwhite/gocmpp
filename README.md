@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/bigwhite/gocmpp.svg?branch=master)](https://travis-ci.org/bigwhite/gocmpp)
+[![Coverage Status](https://coveralls.io/repos/github/bigwhite/gocmpp/badge.svg?branch=master)](https://coveralls.io/github/bigwhite/gocmpp?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bigwhite/gocmpp)](https://goreportcard.com/report/github.com/bigwhite/gocmpp)
 [![GoDoc](http://img.shields.io/badge/GoDoc-Reference-blue.svg)](https://godoc.org/github.com/bigwhite/gocmpp)
 
 # gocmpp

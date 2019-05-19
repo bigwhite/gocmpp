@@ -9,5 +9,9 @@ os:
 
 env:
 
+before_install:
+    - go get github.com/mattn/goveralls
+
 script: 
     - make build
+    - $GOPATH/bin/goveralls -service=travis-ci
