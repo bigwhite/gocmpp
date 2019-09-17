@@ -214,7 +214,7 @@ func (w *packetWriter) WriteByte(b byte) {
 }
 
 // WriteFixedSizeString writes a string to buffer, if the length of s is less than size,
-// Pad binary zero to the left bytes.
+// Pad binary zero to the right.
 func (w *packetWriter) WriteFixedSizeString(s string, size int) {
 	if w.err != nil {
 		return
