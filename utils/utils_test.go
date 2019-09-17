@@ -16,7 +16,7 @@ package cmpputils_test
 import (
 	"testing"
 
-	"github.com/bigwhite/gocmpp/utils"
+	cmpputils "github.com/bigwhite/gocmpp/utils"
 )
 
 func TestTimeStamp2Str(t *testing.T) {
@@ -118,5 +118,27 @@ func TestGB18030ToUtf8(t *testing.T) {
 
 	if s1 != "中" {
 		t.Fatalf("The result is %s, not equal to our expected %s", s1, "中")
+	}
+}
+
+func TestOctetString(t *testing.T) {
+	s1 := "666666"
+	s2 := "88888888"
+	s3 := "55555"
+
+	s := cmpputils.OctetString(s1, 6)
+	if s != "666666" {
+		t.Fatalf("The result is %s, not equal to our expected %s", s, "666666")
+	}
+
+	s = cmpputils.OctetString(s2, 6)
+	if s != "888888" {
+		t.Fatalf("The result is %s, not equal to our expected %s", s, "888888")
+	}
+
+	s = cmpputils.OctetString(s3, 6)
+	expected := s3 + string(make([]byte, 1))
+	if s != expected {
+		t.Fatalf("The result is %s, not equal to our expected %s", s, expected)
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"unicode/utf8"
 	"unsafe"
 
@@ -88,4 +89,17 @@ func GB18030ToUtf8(in string) (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+func OctetString(s string, fixedLength int) string {
+	length := len(s)
+	if length == fixedLength {
+		return s
+	}
+
+	if length > fixedLength {
+		return s[length-fixedLength:]
+	}
+
+	return strings.Join([]string{s, string(make([]byte, fixedLength-length))}, "")
 }
