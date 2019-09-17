@@ -8,7 +8,7 @@ import (
 	"time"
 
 	cmpp "github.com/bigwhite/gocmpp"
-	"github.com/bigwhite/gocmpp/utils"
+	cmpputils "github.com/bigwhite/gocmpp/utils"
 )
 
 const (
@@ -31,14 +31,14 @@ func handleLogin(r *cmpp.Response, p *cmpp.Packet, l *log.Logger) (bool, error) 
 	// set the status in the connect response.
 	resp.Version = 0x30
 	addr := req.SrcAddr
-	if addr != userS {
+	if addr != cmpputils.OctetString(userS, 6) {
 		l.Println("handleLogin error:", cmpp.ConnRspStatusErrMap[cmpp.ErrnoConnInvalidSrcAddr])
 		resp.Status = uint32(cmpp.ErrnoConnInvalidSrcAddr)
 		return false, cmpp.ConnRspStatusErrMap[cmpp.ErrnoConnInvalidSrcAddr]
 	}
 
 	tm := req.Timestamp
-	authSrc := md5.Sum(bytes.Join([][]byte{[]byte(userS),
+	authSrc := md5.Sum(bytes.Join([][]byte{[]byte(cmpputils.OctetString(userS, 6)),
 		make([]byte, 9),
 		[]byte(passwordS),
 		[]byte(cmpputils.TimeStamp2Str(tm))},

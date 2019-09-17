@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bigwhite/gocmpp/utils"
+	cmpputils "github.com/bigwhite/gocmpp/utils"
 )
 
 // Packet length const for cmpp connect request and response packets.
@@ -132,9 +132,10 @@ func (p *CmppConnReqPkt) Pack(seqId uint32) ([]byte, error) {
 	}
 
 	// Pack body
-	w.WriteString(p.SrcAddr)
+	srcAddr := cmpputils.OctetString(p.SrcAddr, 6)
+	w.WriteString(srcAddr)
 
-	md5 := md5.Sum(bytes.Join([][]byte{[]byte(p.SrcAddr),
+	md5 := md5.Sum(bytes.Join([][]byte{[]byte(srcAddr),
 		make([]byte, 9),
 		[]byte(p.Secret),
 		[]byte(ts)},
