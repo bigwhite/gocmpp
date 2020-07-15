@@ -38,6 +38,7 @@ var (
 	ErrnoDeliverExceedMaxMsgLength uint8 = 6
 	ErrnoDeliverInvalidServiceId   uint8 = 7
 	ErrnoDeliverNotPassFlowControl uint8 = 8
+	ErrnoDeliverOtherError         uint8 = 9
 
 	DeliverRspResultErrMap = map[uint8]error{
 		ErrnoDeliverInvalidStruct:      errDeliverInvalidStruct,
@@ -48,6 +49,7 @@ var (
 		ErrnoDeliverExceedMaxMsgLength: errDeliverExceedMaxMsgLength,
 		ErrnoDeliverInvalidServiceId:   errDeliverInvalidServiceId,
 		ErrnoDeliverNotPassFlowControl: errDeliverNotPassFlowControl,
+		ErrnoDeliverOtherError:         errDeliverOtherError,
 	}
 
 	errDeliverInvalidStruct      = errors.New("deliver response status: invalid protocol structure")
@@ -58,6 +60,7 @@ var (
 	errDeliverExceedMaxMsgLength = errors.New("deliver response status: exceed max message length")
 	errDeliverInvalidServiceId   = errors.New("deliver response status: invalid service id")
 	errDeliverNotPassFlowControl = errors.New("deliver response status: not pass the flow control")
+	errDeliverOtherError         = errors.New("deliver response status: other error")
 )
 
 type Cmpp2DeliverReqPkt struct {
