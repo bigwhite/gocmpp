@@ -95,7 +95,7 @@ func (id CommandId) String() string {
 			"CMPP_ACTIVE_TEST",
 			"CMPP_FWD",
 		}[id-1]
-	} else if id < CMPP_REQUEST_MAX {
+	} else if id >= CMPP_MT_ROUTE && id < CMPP_REQUEST_MAX {
 		return []string{
 			"CMPP_MT_ROUTE",
 			"CMPP_MO_ROUTE",
@@ -108,7 +108,7 @@ func (id CommandId) String() string {
 		}[id-0x00000010]
 	}
 
-	if id < CMPP_FWD_RESP && id > CMPP_RESPONSE_MIN {
+	if id <= CMPP_FWD_RESP && id > CMPP_RESPONSE_MIN {
 		return []string{
 			"CMPP_CONNECT_RESP",
 			"CMPP_TERMINATE_RESP",
@@ -120,7 +120,7 @@ func (id CommandId) String() string {
 			"CMPP_ACTIVE_TEST_RESP",
 			"CMPP_FWD_RESP",
 		}[id-0x80000001]
-	} else if id < CMPP_RESPONSE_MAX {
+	} else if id >= CMPP_MT_ROUTE_RESP && id < CMPP_RESPONSE_MAX {
 		return []string{
 			"CMPP_MT_ROUTE_RESP",
 			"CMPP_MO_ROUTE_RESP",

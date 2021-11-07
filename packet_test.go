@@ -95,6 +95,28 @@ func TestCommandIdString(t *testing.T) {
 			id6.String(),
 			"CMPP_GET_MO_ROUTE_RESP")
 	}
+
+	id7, id8 := CommandId(0), CommandId(10)
+	if id7.String() != "unknown" {
+		t.Fatalf("The value of CommandId(0) String is %s, not equal to %s\n", id7.String(), "unknown")
+	}
+
+	if id8.String() != "unknown" {
+		t.Fatalf("The value of CommandId(0) String is %s, not equal to %s\n", id8.String(), "unknown")
+	}
+
+	id9, id10 := CMPP_FWD_RESP, CMPP_MT_ROUTE_RESP
+	if id9.String() != "CMPP_FWD_RESP" {
+		t.Fatalf("The string presentation of command id - CMPP_FWD_RESP is %s, not equal to %s\n",
+			id9.String(),
+			"CMPP_FWD_RESP")
+	}
+
+	if id10.String() != "CMPP_MT_ROUTE_RESP" {
+		t.Fatalf("The string presentation of command id - CMPP_MT_ROUTE_RESP is %s, not equal to %s\n",
+			id10.String(),
+			"CMPP_MT_ROUTE_RESP")
+	}
 }
 
 func TestOpError(t *testing.T) {
